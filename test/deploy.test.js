@@ -17,6 +17,7 @@ const whitelist = [
   'start.js',
   'session-hook.js',
   'chats.js',
+  'autowrap.js',
   'prompt-reader.js',
   'codex.js',
   'agents.js',

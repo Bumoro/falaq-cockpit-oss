@@ -15,6 +15,9 @@
   header.brand .t b { color:var(--txt); font-weight:700; }
   header.brand .spacer { flex:1; }
   header.brand .clock { font-family:var(--mono); font-size:12px; color:var(--dim); }
+  .autowrap-control { display:flex; align-items:center; gap:8px; color:var(--dim); font:11px var(--mono); white-space:nowrap; }
+  .autowrap-control label { display:flex; align-items:center; gap:4px; cursor:pointer; }
+  .autowrap-control input { margin:0; accent-color:var(--blue); }
   header.brand button { background:var(--blue); border:0; color:#04101f; font-weight:700; font-size:13px; padding:8px 16px; border-radius:8px; cursor:pointer; }
   /* command strip */
   .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; margin-bottom:20px; }
@@ -109,6 +112,11 @@
   <img src="/falaq-logo.png" alt="Falaq" onerror="this.style.display='none'">
   <div class="t"><b>Mission Control</b> · Falaq Ops</div>
   <div class="spacer"></div>
+  <div class="autowrap-control" title="Wrap controlled chats at a safe idle moment when context reaches the configured threshold">
+    <label><input type="checkbox" id="autoWrapEnabled"> Auto-wrap</label>
+    <span id="autoWrapThreshold">—%</span>
+    <label><input type="checkbox" id="autoRestartEnabled"> auto-restart</label>
+  </div>
   <div class="clock" id="clock"></div>
   <button data-action="open-modal">+ New Chat</button>
 </header>
@@ -125,7 +133,7 @@
 
 <div class="overlay" id="modalOverlay"><div class="modal">
   <h2>New Chat</h2>
-  <label>Task title</label><input id="mTitle" placeholder="e.g. refresh the landing page copy">
+  <label>Task title <span style="opacity:.6">(optional — inferred from your message)</span></label><input id="mTitle" placeholder="leave blank to auto-name from your first message">
   <label>First prompt</label><textarea id="mPrompt" placeholder="What should this chat do first?"></textarea>
   <label>Project directory</label><input id="mCwd" list="cwdList" placeholder="~/your-project"><datalist id="cwdList"></datalist>
   <label>Model</label>
@@ -165,12 +173,21 @@
 const STALE_MS=10*60*1000;
 const WARN=0.5, AMBER=0.35;               // context thresholds
 let prevNeeds=new Set(), failCount=0, TOKEN='', openChat=null, chatsCache=[], cwds=new Set();
-fetch('/api/token').then(r=>r.text()).then(t=>{TOKEN=t;}).catch(()=>{});
+fetch('/api/token').then(r=>r.text()).then(t=>{TOKEN=t;loadAutoWrap();}).catch(()=>{});
 function H(){return {'x-cockpit-token':TOKEN,'Content-Type':'application/json'};}
 function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function mins(ts){return Math.max(0,Math.round((Date.now()-ts)/60000));}
 function fmtTok(n){ if(n>=1e9)return (n/1e9).toFixed(1)+'B'; if(n>=1e6)return (n/1e6).toFixed(1)+'M'; if(n>=1e3)return (n/1e3).toFixed(0)+'k'; return String(n||0); }
 function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.08;o.start();o.stop(c.currentTime+.25);}catch(e){}}
+function showAutoWrap(c){
+  document.getElementById('autoWrapEnabled').checked=!!c.enabled;
+  document.getElementById('autoRestartEnabled').checked=!!c.autoRestart;
+  document.getElementById('autoWrapThreshold').textContent=Math.round((c.thresholdPct||0)*100)+'%';
+}
+async function loadAutoWrap(){ try{const r=await fetch('/api/autowrap',{headers:H()});if(r.ok)showAutoWrap(await r.json());}catch(e){} }
+async function updateAutoWrap(change){ try{const r=await fetch('/api/autowrap',{method:'POST',headers:H(),body:JSON.stringify(change)});if(r.ok)showAutoWrap(await r.json());}catch(e){} }
+document.getElementById('autoWrapEnabled').addEventListener('change',e=>updateAutoWrap({enabled:e.target.checked}));
+document.getElementById('autoRestartEnabled').addEventListener('change',e=>updateAutoWrap({autoRestart:e.target.checked}));
 // prefer the file-based live agents (catches BACKGROUND agents the hook never saw); fall back to hook agents
 function agentsOf(x){ return (x&&x.liveAgents&&x.liveAgents.length)?x.liveAgents:((x&&x.agents)||[]); }
 function displayState(s){ if(!s.state)return 'idle';
@@ -294,7 +311,7 @@ fetch('/api/new-chat-defaults').then(r=>r.json()).then(d=>{newChatDefaults=d;app
 function openModal(){applyNewChatDefaults();document.getElementById('modalOverlay').classList.add('open');}
 function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
 async function createChat(){
-  const body={title:document.getElementById('mTitle').value.trim()||'chat',prompt:document.getElementById('mPrompt').value.trim(),cwd:document.getElementById('mCwd').value.trim()||undefined,model:document.getElementById('mModel').value,effort:document.getElementById('mEffort').value,ultracode:document.getElementById('mUltra').checked,profile:document.getElementById('mSafe').checked?'nondev':'dev'};
+  const body={title:document.getElementById('mTitle').value.trim()||undefined,prompt:document.getElementById('mPrompt').value.trim(),cwd:document.getElementById('mCwd').value.trim()||undefined,model:document.getElementById('mModel').value,effort:document.getElementById('mEffort').value,ultracode:document.getElementById('mUltra').checked,profile:document.getElementById('mSafe').checked?'nondev':'dev'};
   const r=await fetch('/api/chats',{method:'POST',headers:H(),body:JSON.stringify(body)});
   if(!r.ok){let m=r.status;try{m=(await r.json()).error;}catch(e){}alert('Failed: '+m);return;}
   const chat=await r.json(); closeModal(); openPanel(chat.name); tick();
@@ -331,7 +348,7 @@ async function answerCard(name,key){
   // the poll loop refreshes within ~1-2s; nudge sooner if a manual refresh fn exists
 }
 async function wrapSave(){ if(!openChat||!confirm('Inject the session-close protocol into this chat? It will save the session log and give a resume prompt. You then close it.'))return;
-  const msg="We're low on context. Follow the session-close protocol now: write the session log, update any task tracker we touched, then give me the exact resume prompt to continue in a fresh session. Then stop — I'll close this chat.";
+  const msg="We're low on context. Follow your session-close protocol now: write the session log / update your task tracker as your setup dictates, then give me the exact resume prompt to continue in a fresh session. Then stop — I'll close this chat.";
   await fetch(`/api/chats/${openChat}/input`,{method:'POST',headers:H(),body:JSON.stringify({text:msg})}); setTimeout(refreshScreen,400);
 }
 async function killChat(){ if(!openChat||!confirm('Kill this chat session?'))return; await fetch(`/api/chats/${openChat}`,{method:'DELETE',headers:H()}); closePanel(); tick(); }

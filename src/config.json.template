@@ -2,5 +2,6 @@
   "clientMap": {
     "my-repo-dir-name": "Display Name",
     "example-client": "Example Client"
-  }
+  },
+  "autoWrap": { "enabled": false, "thresholdPct": 0.85, "autoRestart": false }
 }

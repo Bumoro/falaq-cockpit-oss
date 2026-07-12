@@ -44,6 +44,24 @@ function slugify(title) {
   while (taken.has(name)) name = 'ck-' + base.slice(0, 20) + '-' + i++;
   return name;
 }
+function deriveTitle(prompt) {
+  let text = String(prompt == null ? '' : prompt)
+    .replace(/^\s*ultracode\b[\s\p{P}\p{S}]*/iu, '')
+    .split(/\r?\n|[.!?](?:\s|$)/, 1)[0]
+    .replace(/^\s+|\s+$/g, '')
+    .replace(/^[\s\p{P}\p{S}]+|[\s\p{P}\p{S}]+$/gu, '');
+  const filler = /^(?:please|can\s+you|could\s+you|help\s+me|i\s+need\s+to|i\s+want\s+to|let['’]?s|lets|hey|hi|ok|okay|so)\b[\s\p{P}\p{S}]*/iu;
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(filler, '').replace(/^[\s\p{P}\p{S}]+/gu, '');
+  } while (text && text !== previous);
+  text = text.replace(/[\s\p{P}\p{S}]+$/gu, '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const words = text.split(' ').slice(0, 6);
+  while (words.length && words.join(' ').length > 48) words.pop();
+  return words.join(' ');
+}
 function validate({ cwd, model, effort }) {
   if (!MODELS.has(model)) return 'invalid model';
   if (!EFFORTS.has(effort)) return 'invalid effort';
@@ -114,7 +132,9 @@ function killChat(name) {
   saveChats(loadChats().filter(c => c.name !== name));
 }
 function createChat(opts, cb) {
-  const title = opts.title;
+  const title = opts.title && String(opts.title).trim()
+    ? opts.title
+    : (deriveTitle(opts.prompt || '') || 'chat');
   const model = opts.model || 'sonnet';
   const effort = opts.effort || 'medium';
   const profile = opts.profile === 'nondev' ? 'nondev' : 'dev';
@@ -247,4 +267,4 @@ function createChat(opts, cb) {
     }
   }, 500);
 }
-module.exports = { createChat, listChats, screen, sendInput, sendKey, sendTermKey, killChat, slugify, validate, NAME_RE };
+module.exports = { createChat, listChats, screen, sendInput, sendKey, sendTermKey, killChat, slugify, deriveTitle, validate, NAME_RE };

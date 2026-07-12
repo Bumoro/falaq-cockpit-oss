@@ -15,6 +15,7 @@ const codexMod = require('./codex.js');
 const transcriptMod = require('./transcript.js');
 const agentsMod = require('./agents.js');
 const promptReader = require('./prompt-reader.js');
+const autowrapMod = require('./autowrap.js');
 const PORT = parseInt(process.env.AGENT_DASHBOARD_PORT || '3847');
 const DIR = __dirname;
 
@@ -73,6 +74,37 @@ function knownTranscriptPaths() {
     }
   } catch (e) {}
   return set;
+}
+
+function buildSessions() {
+  const sessionsDir = path.join(STATE_DIR, 'sessions');
+  const now = Date.now();
+  let sessions = [];
+  try {
+    sessions = fs.readdirSync(sessionsDir)
+      .filter(f => f.endsWith('.json'))
+      .map(f => {
+        try { return JSON.parse(fs.readFileSync(path.join(sessionsDir, f), 'utf8')); }
+        catch (e) { return null; }
+      })
+      .filter(Boolean)
+      .filter(s => !(s.state === 'ended' && now - (s.endedAt || 0) > 3600e3));
+  } catch (e) {}
+  return sessions.map(s => {
+    const extra = {};
+    if (s.transcriptPath) {
+      try { const c = contextMod.contextForTranscript(s.transcriptPath); if (c) extra.context = c; } catch (e) {}
+      try { const la = agentsMod.activeAgents(s.transcriptPath); if (la.length) extra.liveAgents = la; } catch (e) {}
+    }
+    // Only WAITING, cockpit-CONTROLLED chats can be answered from the card.
+    try {
+      if (s.state === 'needs_you' && s.chatName) {
+        const p = pendingFor(s.chatName);
+        if (p && p.kind !== 'none') extra.pending = p;
+      }
+    } catch (e) {}
+    return Object.keys(extra).length ? { ...s, ...extra } : s;
+  });
 }
 
 // Auto-shutdown after 30 min of no events
@@ -293,35 +325,37 @@ const server = http.createServer((req, res) => {
     } catch (e) { return json(400, { error: e.message }); }
   }
 
+  if (parsed.pathname === '/api/autowrap') {
+    if (req.headers['x-cockpit-token'] !== TOKEN) { res.writeHead(403); return res.end('forbidden'); }
+    const json = obj => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+    if (req.method === 'GET') return json(autowrapMod.readConfig());
+    if (req.method === 'POST') {
+      return readBody(req, body => {
+        try {
+          const file = path.join(STATE_DIR, 'config.json');
+          // Read the existing config. If the file EXISTS but doesn't parse, refuse to write — else we'd
+          // silently drop clientMap and every other sibling key. A missing file (ENOENT) is fine to create.
+          let config = {}, existed = false, parseOk = true;
+          try { const rawCfg = fs.readFileSync(file, 'utf8'); existed = true; try { config = JSON.parse(rawCfg); } catch (e) { parseOk = false; } }
+          catch (e) {}
+          if (existed && !parseOk) return json(autowrapMod.readConfig());
+          if (!config || typeof config !== 'object' || Array.isArray(config)) config = {};
+          const autoWrap = config.autoWrap && typeof config.autoWrap === 'object' && !Array.isArray(config.autoWrap) ? { ...config.autoWrap } : {};
+          if (typeof body.enabled === 'boolean') autoWrap.enabled = body.enabled;
+          if (typeof body.autoRestart === 'boolean') autoWrap.autoRestart = body.autoRestart;
+          if (typeof body.thresholdPct === 'number' && Number.isFinite(body.thresholdPct) && body.thresholdPct > 0 && body.thresholdPct <= 1) autoWrap.thresholdPct = body.thresholdPct;
+          config.autoWrap = autoWrap;
+          fs.writeFileSync(file + '.tmp', JSON.stringify(config, null, 2));
+          fs.renameSync(file + '.tmp', file);
+        } catch (e) {}
+        json(autowrapMod.readConfig());
+      });
+    }
+    res.writeHead(405); return res.end();
+  }
+
   if (parsed.pathname === '/api/sessions') {
-    const sessionsDir = path.join(STATE_DIR, 'sessions');
-    const now = Date.now();
-    let sessions = [];
-    try {
-      sessions = fs.readdirSync(sessionsDir)
-        .filter(f => f.endsWith('.json'))
-        .map(f => {
-          try { return JSON.parse(fs.readFileSync(path.join(sessionsDir, f), 'utf8')); }
-          catch (e) { return null; }
-        })
-        .filter(Boolean)
-        .filter(s => !(s.state === 'ended' && now - (s.endedAt || 0) > 3600e3));
-    } catch (e) {}
-    sessions = sessions.map(s => {
-      const extra = {};
-      if (s.transcriptPath) {
-        try { const c = contextMod.contextForTranscript(s.transcriptPath); if (c) extra.context = c; } catch (e) {}
-        try { const la = agentsMod.activeAgents(s.transcriptPath); if (la.length) extra.liveAgents = la; } catch (e) {}
-      }
-      // Only WAITING, cockpit-CONTROLLED chats can be answered from the card.
-      try {
-        if (s.state === 'needs_you' && s.chatName) {
-          const p = pendingFor(s.chatName);
-          if (p && p.kind !== 'none') extra.pending = p;
-        }
-      } catch (e) {}
-      return Object.keys(extra).length ? { ...s, ...extra } : s;
-    });
+    const sessions = buildSessions();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify(sessions));
   }
@@ -397,6 +431,7 @@ server.listen(PORT, '127.0.0.1', () => {
 
 try { usageMod.refreshPreserving(); } catch (e) {}
 setInterval(() => { try { usageMod.refreshPreserving(); } catch (e) {} }, 60000).unref();
+setInterval(() => { try { autowrapMod.tick(buildSessions(), undefined, Date.now()); } catch (e) {} }, 30000).unref();
 
 // Flush any watcher notifications that were gated (no webhook configured yet) —
 // once a webhook shows up, deliver the pending message and clear the flag.
