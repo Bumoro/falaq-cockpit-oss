@@ -1,0 +1,12 @@
+# Runtime state (created on the local machine, never committed)
+sessions/
+server*.pid
+src/server.pid
+.token
+.slack-webhook
+src/.slack-webhook
+
+# Local, machine-specific config — seeded from the *.template files by install.sh
+src/config.json
+src/watchers/*.json
+!src/watchers/*.template.json

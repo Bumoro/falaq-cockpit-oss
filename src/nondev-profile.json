@@ -1,0 +1,52 @@
+{
+  "permissions": {
+    "defaultMode": "default",
+    "allow": [
+      "Read", "Grep", "Glob", "TodoWrite", "Task", "WebSearch",
+      "Bash(ls:*)", "Bash(pwd)", "Bash(which:*)", "Bash(git status:*)"
+    ],
+    "deny": [
+      "Read(**/.ssh/**)", "Read(**/id_rsa*)", "Read(**/*.pem)", "Read(**/.credentials.json)", "Read(**/.env)", "Read(**/.env.*)",
+      "Read(//__HOME__/.claude/**)", "Read(//__HOME__/.ssh/**)", "Read(//__HOME__/.aws/**)", "Read(//__HOME__/.config/**)", "Read(//__HOME__/.gnupg/**)",
+
+      "Write(**/.claude/**)", "Edit(**/.claude/**)", "NotebookEdit(**/.claude/**)", "Write(**/settings.json)", "Write(**/settings.local.json)", "Write(**/.claude/settings*.json)", "Write(**/nondev-profiles/**)",
+      "Write(//__HOME__/.claude/**)", "Edit(//__HOME__/.claude/**)", "Write(//__HOME__/.ssh/**)", "Write(//__HOME__/.aws/**)", "Write(//__HOME__/.config/**)", "Write(//__HOME__/.gnupg/**)",
+      "Write(//__HOME__/Library/LaunchAgents/**)", "Write(//__HOME__/Library/LaunchDaemons/**)", "Write(//__COCKPIT__/**)", "Edit(//__COCKPIT__/**)", "Write(//__MIRROR__/**)", "Edit(//__MIRROR__/**)",
+      "Write(**/falaq-cockpit/**)", "Edit(**/falaq-cockpit/**)",
+      "Write(**/.zshrc)", "Write(**/.zprofile)", "Write(**/.zshenv)", "Write(**/.zlogin)", "Write(**/.bashrc)", "Write(**/.bash_profile)", "Write(**/.profile)", "Edit(**/.zshrc)", "Edit(**/.zprofile)", "Edit(**/.bashrc)", "Edit(**/.bash_profile)",
+      "Write(**/.ssh/**)", "Write(**/authorized_keys)", "Write(**/*.pem)", "Write(**/id_rsa*)",
+
+      "Bash(cat:*)", "Bash(head:*)", "Bash(tail:*)", "Bash(grep:*)", "Bash(egrep:*)", "Bash(fgrep:*)", "Bash(rg:*)", "Bash(ag:*)",
+      "Bash(less:*)", "Bash(more:*)", "Bash(strings:*)", "Bash(od:*)", "Bash(xxd:*)", "Bash(hexdump:*)", "Bash(nl:*)",
+      "Bash(awk:*)", "Bash(sed:*)", "Bash(cut:*)", "Bash(base64:*)", "Bash(tac:*)", "Bash(rev:*)", "Bash(dd:*)", "Bash(find:*)", "Bash(xargs:*)",
+      "Bash(tr:*)", "Bash(fold:*)", "Bash(fmt:*)", "Bash(expand:*)", "Bash(unexpand:*)", "Bash(col:*)", "Bash(colrm:*)", "Bash(pr:*)",
+      "Bash(paste:*)", "Bash(join:*)", "Bash(comm:*)", "Bash(look:*)", "Bash(column:*)", "Bash(ptx:*)", "Bash(csplit:*)", "Bash(split:*)",
+      "Bash(iconv:*)", "Bash(sort:*)", "Bash(shuf:*)", "Bash(tsort:*)", "Bash(uniq:*)", "Bash(cmp:*)", "Bash(diff:*)", "Bash(sdiff:*)",
+      "Bash(bat:*)", "Bash(batcat:*)", "Bash(view:*)", "Bash(vi:*)", "Bash(vim:*)", "Bash(ex:*)", "Bash(nano:*)", "Bash(emacs:*)",
+      "Bash(w3m:*)", "Bash(lynx:*)", "Bash(links:*)", "Bash(elinks:*)", "Bash(xmllint:*)", "Bash(jq:*)", "Bash(yq:*)", "Bash(plutil:*)", "Bash(openssl:*)",
+      "Bash(zcat:*)", "Bash(gzcat:*)", "Bash(bzcat:*)", "Bash(xzcat:*)", "Bash(gzip:*)", "Bash(gunzip:*)", "Bash(zless:*)",
+      "Bash(tar:*)", "Bash(unzip:*)", "Bash(funzip:*)", "Bash(cpio:*)", "Bash(ar:*)", "Bash(nm:*)", "Bash(objdump:*)", "Bash(otool:*)", "Bash(file:*)",
+      "Bash(open:*)", "Bash(pbcopy:*)", "Bash(pbpaste:*)", "Bash(uuencode:*)", "Bash(uudecode:*)", "Bash(git cat-file:*)", "Bash(git archive:*)",
+
+      "Bash(bash:*)", "Bash(sh:*)", "Bash(zsh:*)", "Bash(ksh:*)", "Bash(eval:*)", "Bash(exec:*)", "Bash(source:*)", "Bash(env:*)",
+      "Bash(python:*)", "Bash(python3:*)", "Bash(node:*)", "Bash(ruby:*)", "Bash(perl:*)", "Bash(php:*)", "Bash(deno:*)", "Bash(bun:*)", "Bash(osascript:*)", "Bash(tclsh:*)", "Bash(make:*)", "Bash(cmake:*)",
+      "Bash(nice:*)", "Bash(nohup:*)", "Bash(time:*)", "Bash(timeout:*)", "Bash(gtimeout:*)", "Bash(stdbuf:*)", "Bash(script:*)", "Bash(expect:*)", "Bash(watch:*)", "Bash(caffeinate:*)", "Bash(setsid:*)", "Bash(nix-shell:*)", "Bash(entr:*)", "Bash(parallel:*)",
+
+      "Bash(rm:*)", "Bash(rmdir:*)", "Bash(unlink:*)", "Bash(shred:*)", "Bash(mkfs:*)", "Bash(diskutil:*)", "Bash(tee:*)", "Bash(cp:*)", "Bash(ln:*)",
+      "Bash(sudo:*)", "Bash(su:*)", "Bash(doas:*)", "Bash(chmod:*)", "Bash(chown:*)", "Bash(chgrp:*)",
+      "Bash(security:*)", "Bash(op:*)", "Bash(launchctl:*)", "Bash(defaults:*)", "Bash(crontab:*)", "Bash(systemsetup:*)",
+      "Bash(kill:*)", "Bash(killall:*)", "Bash(pkill:*)",
+
+      "Bash(git push:*)", "Bash(git reset:*)", "Bash(git clean:*)", "Bash(git checkout:*)", "Bash(git rebase:*)", "Bash(git branch -D:*)", "Bash(git filter-branch:*)", "Bash(git update-ref:*)", "Bash(git config:*)",
+      "Bash(git diff:*)", "Bash(git show:*)", "Bash(git log:*)", "Bash(git grep:*)", "Bash(git blame:*)",
+      "Bash(textutil:*)", "Bash(sips:*)", "Bash(mdls:*)", "Bash(mdfind:*)", "Bash(GetFileInfo:*)", "Bash(codesign:*)", "Bash(plutil:*)", "Bash(nkf:*)", "Bash(recode:*)", "Bash(hd:*)", "Bash(bvi:*)", "Bash(xxd:*)",
+      "Bash(zstd:*)", "Bash(xz:*)", "Bash(lz4:*)", "Bash(lzop:*)", "Bash(brotli:*)", "Bash(7z:*)", "Bash(7za:*)", "Bash(7zr:*)", "Bash(unrar:*)", "Bash(unar:*)", "Bash(lsar:*)", "Bash(bsdcat:*)", "Bash(bsdtar:*)", "Bash(zstdcat:*)", "Bash(lz4cat:*)", "Bash(unzstd:*)", "Bash(unxz:*)",
+
+      "Bash(curl:*)", "Bash(wget:*)", "Bash(ssh:*)", "Bash(scp:*)", "Bash(sftp:*)", "Bash(rsync:*)", "Bash(nc:*)", "Bash(ncat:*)", "Bash(telnet:*)", "Bash(ftp:*)", "Bash(socat:*)",
+
+      "Bash(vercel:*)", "Bash(npx vercel:*)", "Bash(shopify:*)", "Bash(npx shopify:*)", "Bash(fly:*)", "Bash(flyctl:*)", "Bash(kubectl:*)", "Bash(docker:*)", "Bash(eas:*)", "Bash(npm publish:*)", "Bash(gh:*)", "Bash(aws:*)", "Bash(gcloud:*)", "Bash(terraform:*)", "Bash(heroku:*)", "Bash(netlify:*)", "Bash(wrangler:*)",
+
+      "Bash(psql:*)", "Bash(mysql:*)", "Bash(mongo:*)", "Bash(mongosh:*)", "Bash(redis-cli:*)", "Bash(sqlite3:*)", "Bash(prisma:*)", "Bash(npx prisma:*)"
+    ]
+  }
+}

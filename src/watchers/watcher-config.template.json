@@ -1,0 +1,6 @@
+{
+  "enabled": false,
+  "ci": { "repos": [] },
+  "deploySha": { "enabled": false, "repo": "", "branch": "", "runningSha": "" },
+  "email": {}
+}
