@@ -26,10 +26,30 @@ const whitelist = [
   'transcript.js',
   'watchers.js',
   'live.html',
+  'mobile.html',
+  'home.html',
+  'help.html',
+  'index.html',
+  'dashboard-state.js',
+  'purpose.js',
+  'duplicates.js',
   'chat.html',
   'nondev-profile.json',
   'watchers/checks.js',
+  'dispatch.js',
+  'dispatch/eligibility.js',
+  'dispatch/completion.js',
+  'dispatch/trigger.js',
+  'dispatch-profile.json.template',
+  'config.json.template',
 ];
+
+test('deploy fixture whitelist covers every runtime file and config template', () => {
+  for (const file of ['dispatch.js', 'dispatch/eligibility.js', 'dispatch/completion.js', 'dispatch/trigger.js', 'dispatch-profile.json.template', 'live.html', 'mobile.html', 'home.html', 'help.html', 'index.html', 'dashboard-state.js', 'purpose.js', 'duplicates.js', 'config.json.template']) {
+    assert.ok(whitelist.includes(file), `${file} missing from deploy fixture whitelist`);
+    assert.match(fs.readFileSync(path.join(REAL_REPO, 'files.whitelist'), 'utf8'), new RegExp(`^${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'));
+  }
+});
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 let nextPort = 4210 + (process.pid % 200);

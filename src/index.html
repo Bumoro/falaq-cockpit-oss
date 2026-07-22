@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Falaq Agent Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .dashboard {
+    display: flex;
+    height: 100vh;
+    gap: 0;
+  }
+
+  /* LEFT PANEL - Office */
+  .office-panel {
+    flex: 1.2;
+    position: relative;
+    overflow: hidden;
+    border-right: 1px solid #21262d;
+    /* Tiled floor */
+    background:
+      repeating-conic-gradient(#171d25 0% 25%, #1c232d 0% 50%) 0 0 / 36px 36px;
+  }
+
+  /* Wall section behind desks */
+  .office-wall {
+    position: relative;
+    background: linear-gradient(180deg, #0f1318 0%, #151b24 50%, #1a2130 100%);
+    border-bottom: 3px solid #2d333b;
+    padding: 10px 16px 8px;
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+  /* Wall texture - subtle horizontal lines like paneling */
+  .office-wall::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      180deg,
+      transparent 0px, transparent 14px,
+      rgba(255,255,255,0.02) 14px, rgba(255,255,255,0.02) 15px
+    );
+    pointer-events: none;
+  }
+  /* Baseboard / trim at bottom of wall */
+  .office-wall::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #2d333b, #3d444d, #2d333b);
+  }
+
+  /* Logo on the wall */
+  .wall-logo {
+    height: 50px;
+    width: auto;
+    filter: drop-shadow(0 0 8px rgba(232,168,56,0.3));
+    opacity: 0.95;
+  }
+
+  /* Decorative wall items */
+  .wall-decor {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  /* Pixel art clock on wall */
+  .wall-clock {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #484f58;
+    border-radius: 50%;
+    position: relative;
+    background: #1c2128;
+  }
+  .wall-clock::before {
+    content: '';
+    position: absolute;
+    width: 1px;
+    height: 7px;
+    background: #8b949e;
+    top: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    transform-origin: bottom;
+  }
+  .wall-clock::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 1px;
+    background: #8b949e;
+    top: 50%;
+    left: 50%;
+    transform-origin: left;
+    animation: clock-tick 10s linear infinite;
+  }
+  @keyframes clock-tick {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Active agents counter on wall */
+  .wall-counter {
+    font-family: monospace;
+    font-size: 10px;
+    color: #3fb950;
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 4px;
+    padding: 4px 8px;
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .wall-counter .count { font-size: 16px; font-weight: 900; }
+  button.wall-counter { cursor: pointer; font: inherit; }
+  button.wall-counter.active { border-color: #58a6ff; color: #79c0ff; }
+
+  /* Floor area with grid */
+  .office-floor {
+    position: relative;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* Carpet/rug under the desks */
+  .office-rug {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    right: 12px;
+    bottom: 60px;
+    background: rgba(30,40,55,0.5);
+    border: 1px solid rgba(48,54,61,0.4);
+    border-radius: 6px;
+    pointer-events: none;
+  }
+
+  /* Furniture row at bottom */
+  .office-furniture {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 52px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 12px 6px;
+    pointer-events: none;
+  }
+
+  /* Pixel art water cooler */
+  .water-cooler {
+    width: 1px; height: 1px;
+    transform: scale(2.5);
+    box-shadow:
+      3px 0 #4da6ff, 4px 0 #388bfd, 5px 0 #4da6ff,
+      3px 1px #388bfd, 4px 1px #79c0ff, 5px 1px #388bfd,
+      3px 2px #4da6ff, 4px 2px #388bfd, 5px 2px #4da6ff,
+      2px 3px #8b949e, 3px 3px #8b949e, 4px 3px #8b949e, 5px 3px #8b949e, 6px 3px #8b949e,
+      3px 4px #6e7681, 4px 4px #6e7681, 5px 4px #6e7681,
+      3px 5px #6e7681, 4px 5px #484f58, 5px 5px #6e7681,
+      3px 6px #6e7681, 4px 6px #6e7681, 5px 6px #6e7681,
+      3px 7px #484f58, 4px 7px #484f58, 5px 7px #484f58;
+  }
+
+  /* Pixel art bookshelf */
+  .bookshelf {
+    width: 1px; height: 1px;
+    transform: scale(2.5);
+    box-shadow:
+      /* top shelf */
+      0px 0 #5c3a1e, 1px 0 #5c3a1e, 2px 0 #5c3a1e, 3px 0 #5c3a1e, 4px 0 #5c3a1e, 5px 0 #5c3a1e, 6px 0 #5c3a1e, 7px 0 #5c3a1e,
+      0px 1px #da3633, 1px 1px #da3633, 2px 1px #3fb950, 3px 1px #3fb950, 4px 1px #58a6ff, 5px 1px #58a6ff, 6px 1px #d29922, 7px 1px #d29922,
+      0px 2px #da3633, 1px 2px #da3633, 2px 2px #3fb950, 3px 2px #3fb950, 4px 2px #58a6ff, 5px 2px #58a6ff, 6px 2px #d29922, 7px 2px #d29922,
+      /* mid shelf */
+      0px 3px #5c3a1e, 1px 3px #5c3a1e, 2px 3px #5c3a1e, 3px 3px #5c3a1e, 4px 3px #5c3a1e, 5px 3px #5c3a1e, 6px 3px #5c3a1e, 7px 3px #5c3a1e,
+      0px 4px #8957e5, 1px 4px #8957e5, 2px 4px #f778ba, 3px 4px #f778ba, 4px 4px #e3b341, 5px 4px #e3b341, 6px 4px #39d2c0, 7px 4px #39d2c0,
+      0px 5px #8957e5, 1px 5px #8957e5, 2px 5px #f778ba, 3px 5px #f778ba, 4px 5px #e3b341, 5px 5px #e3b341, 6px 5px #39d2c0, 7px 5px #39d2c0,
+      /* bottom shelf */
+      0px 6px #5c3a1e, 1px 6px #5c3a1e, 2px 6px #5c3a1e, 3px 6px #5c3a1e, 4px 6px #5c3a1e, 5px 6px #5c3a1e, 6px 6px #5c3a1e, 7px 6px #5c3a1e,
+      0px 7px #f0883e, 1px 7px #f0883e, 2px 7px #1f6feb, 3px 7px #1f6feb, 4px 7px #b62324, 5px 7px #b62324, 6px 7px #79c0ff, 7px 7px #79c0ff,
+      0px 8px #f0883e, 1px 8px #f0883e, 2px 8px #1f6feb, 3px 8px #1f6feb, 4px 8px #b62324, 5px 8px #b62324, 6px 8px #79c0ff, 7px 8px #79c0ff,
+      0px 9px #5c3a1e, 1px 9px #5c3a1e, 2px 9px #5c3a1e, 3px 9px #5c3a1e, 4px 9px #5c3a1e, 5px 9px #5c3a1e, 6px 9px #5c3a1e, 7px 9px #5c3a1e;
+  }
+
+  /* Pixel art coffee mug (decoration) */
+  .coffee-mug {
+    width: 1px; height: 1px;
+    transform: scale(2.5);
+    box-shadow:
+      2px 0 #8b5e3c, 3px 0 #6e4b22, 4px 0 #8b5e3c,
+      1px 1px #f5f0e8, 2px 1px #f5f0e8, 3px 1px #e8dcc8, 4px 1px #f5f0e8, 5px 1px #8b949e,
+      1px 2px #f5f0e8, 2px 2px #e8dcc8, 3px 2px #f5f0e8, 4px 2px #e8dcc8, 5px 2px #8b949e,
+      2px 3px #d4a57a, 3px 3px #d4a57a, 4px 3px #d4a57a;
+  }
+
+  .office-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 12px 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .desk-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 4px 6px;
+    position: relative;
+    min-height: 100px;
+  }
+
+  .desk-surface {
+    width: 56px;
+    height: 20px;
+    background: #2d333b;
+    border-radius: 3px;
+    position: relative;
+    margin-top: 4px;
+    border: 1px solid #3d444d;
+  }
+
+  .desk-monitor {
+    position: absolute;
+    width: 14px;
+    height: 10px;
+    background: #1c2128;
+    border: 1px solid #484f58;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 1px;
+  }
+  .desk-monitor::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 3px;
+    background: #2d333b;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .sprite-container {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .agent-name {
+    font-size: 9px;
+    font-weight: 700;
+    margin-top: 2px;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  .agent-status-text {
+    font-size: 7px;
+    text-align: center;
+    margin-top: 1px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Active bounce */
+  .desk-cell.active .sprite-container {
+    animation: bounce 0.8s ease-in-out infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  /* Active status dot */
+  .desk-cell.active .agent-name::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    margin-right: 3px;
+    animation: pulse-dot 1s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Idle state */
+  .desk-cell.idle .agent-name,
+  .desk-cell.idle .agent-status-text {
+    color: #484f58;
+  }
+  .desk-cell.idle .sprite-container { opacity: .28; filter: grayscale(1); }
+  .office-floor.active-only .desk-cell.idle { display: none; }
+
+  /* ZZZ floating */
+  .zzz {
+    position: absolute;
+    top: -2px;
+    right: 2px;
+    font-size: 8px;
+    color: #484f58;
+    animation: zzz-float 2s ease-in-out infinite;
+    display: none;
+  }
+  .desk-cell.idle .zzz {
+    display: block;
+  }
+  @keyframes zzz-float {
+    0%, 100% { transform: translateY(0); opacity: 0.3; }
+    50% { transform: translateY(-10px); opacity: 1; }
+  }
+
+  /* Done sparkle */
+  .sparkle {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    pointer-events: none;
+    display: none;
+  }
+  .desk-cell.done .sparkle { display: block; }
+  .sparkle::before, .sparkle::after,
+  .sparkle span::before, .sparkle span::after {
+    content: '';
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: #e3b341;
+    border-radius: 50%;
+    animation: sparkle-flash 0.6s ease-in-out infinite;
+  }
+  .sparkle::before { top: 0; left: 50%; }
+  .sparkle::after { bottom: 0; left: 50%; animation-delay: 0.15s; }
+  .sparkle span::before { top: 50%; left: 0; animation-delay: 0.3s; }
+  .sparkle span::after { top: 50%; right: 0; animation-delay: 0.45s; }
+  @keyframes sparkle-flash {
+    0%, 100% { opacity: 0; transform: scale(0); }
+    50% { opacity: 1; transform: scale(1.5); }
+  }
+
+  /* Large potted plant - tall fern style */
+  .plant-tall {
+    width: 1px; height: 1px;
+    transform: scale(2.5);
+    box-shadow:
+      /* leaves top */
+      4px 0 #238636, 5px 0 #3fb950,
+      2px 1px #3fb950, 3px 1px #238636, 4px 1px #3fb950, 5px 1px #238636, 6px 1px #3fb950, 7px 1px #238636,
+      1px 2px #238636, 2px 2px #3fb950, 3px 2px #2ea043, 4px 2px #3fb950, 5px 2px #2ea043, 6px 2px #3fb950, 7px 2px #238636, 8px 2px #3fb950,
+      2px 3px #238636, 3px 3px #3fb950, 4px 3px #238636, 5px 3px #3fb950, 6px 3px #238636, 7px 3px #3fb950,
+      3px 4px #2ea043, 4px 4px #238636, 5px 4px #2ea043, 6px 4px #238636,
+      /* stem */
+      4px 5px #196c2e, 5px 5px #196c2e,
+      4px 6px #196c2e, 5px 6px #196c2e,
+      /* pot */
+      2px 7px #8b5e3c, 3px 7px #6e4b22, 4px 7px #6e4b22, 5px 7px #6e4b22, 6px 7px #6e4b22, 7px 7px #8b5e3c,
+      2px 8px #6e4b22, 3px 8px #8b5e3c, 4px 8px #6e4b22, 5px 8px #6e4b22, 6px 8px #8b5e3c, 7px 8px #6e4b22,
+      3px 9px #6e4b22, 4px 9px #6e4b22, 5px 9px #6e4b22, 6px 9px #6e4b22;
+  }
+
+  /* Small cactus */
+  .plant-cactus {
+    width: 1px; height: 1px;
+    transform: scale(2.5);
+    box-shadow:
+      4px 0 #238636, 5px 0 #2ea043,
+      4px 1px #2ea043, 5px 1px #238636,
+      2px 2px #238636, 3px 2px #2ea043, 4px 2px #238636, 5px 2px #2ea043, 6px 2px #238636, 7px 2px #2ea043,
+      4px 3px #2ea043, 5px 3px #238636,
+      4px 4px #238636, 5px 4px #2ea043,
+      3px 5px #6e4b22, 4px 5px #8b5e3c, 5px 5px #6e4b22, 6px 5px #8b5e3c;
+  }
+
+  /* RIGHT PANEL */
+  .info-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #0d1117;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #21262d;
+    font-size: 12px;
+    font-weight: 700;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Usage Meter */
+  .usage-section {
+    padding: 16px;
+    border-bottom: 1px solid #21262d;
+  }
+  .usage-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #8b949e;
+    margin-bottom: 6px;
+  }
+  .usage-bar-bg {
+    width: 100%;
+    height: 24px;
+    background: #161b22;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #21262d;
+  }
+  .usage-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.5s ease, background 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    min-width: 40px;
+  }
+  .usage-bar-fill.green { background: linear-gradient(90deg, #238636, #3fb950); }
+  .usage-bar-fill.yellow { background: linear-gradient(90deg, #d29922, #e3b341); }
+  .usage-bar-fill.red { background: linear-gradient(90deg, #da3633, #f85149); }
+
+  .pace-indicator {
+    margin-top: 6px;
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .pace-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .pace-green { background: rgba(35,134,54,0.2); color: #3fb950; }
+  .pace-yellow { background: rgba(210,153,34,0.2); color: #e3b341; }
+  .pace-red { background: rgba(218,54,51,0.2); color: #f85149; }
+  .model-tiles { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .model-tile { background:#161b22; border:1px solid #21262d; border-radius:6px; padding:8px; }
+  .model-tile b { display:block; color:#c9d1d9; font-size:15px; }
+  .needs-strip { display:none; background:rgba(248,81,73,.12); color:#ff7b72; border-bottom:1px solid rgba(248,81,73,.35); padding:9px 16px; font-size:11px; }
+  .needs-strip.show { display:block; }
+  .duplicate-strip { display:none; background:rgba(248,81,73,.14); color:#ff7b72; border-bottom:1px solid rgba(248,81,73,.4); padding:8px 12px; font-size:11px; gap:7px; align-items:center; }
+  .duplicate-strip.show { display:flex; }
+  .duplicate-strip .copy { flex:1; }
+  .duplicate-strip button { border:1px solid rgba(248,81,73,.5); background:#161b22; color:#ff7b72; border-radius:5px; padding:3px 7px; cursor:pointer; }
+
+  /* Task List */
+  .task-section {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 16px;
+  }
+  .task-section::-webkit-scrollbar { width: 6px; }
+  .task-section::-webkit-scrollbar-track { background: transparent; }
+  .task-section::-webkit-scrollbar-thumb { background: #21262d; border-radius: 3px; }
+
+  .task-card {
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-left: 3px solid;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    transition: opacity 0.3s;
+  }
+  .task-card.status-executing { border-left-color: #1f6feb; }
+  .task-card.status-planning { border-left-color: #8957e5; }
+  .task-card.status-reviewing { border-left-color: #39d2c0; }
+  .task-card.status-done { border-left-color: #238636; opacity: 0.7; }
+  .task-card.status-done .task-desc { text-decoration: line-through; }
+
+  .task-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .status-badge {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-executing { background: rgba(31,111,235,0.2); color: #58a6ff; }
+  .badge-planning { background: rgba(137,87,229,0.2); color: #a371f7; }
+  .badge-reviewing { background: rgba(57,210,192,0.2); color: #39d2c0; }
+  .badge-done { background: rgba(35,134,54,0.2); color: #3fb950; }
+
+  .task-agent {
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .task-desc {
+    font-size: 11px;
+    color: #8b949e;
+    margin-top: 2px;
+  }
+  .task-time {
+    font-size: 10px;
+    color: #484f58;
+    margin-top: 3px;
+  }
+  .task-actions { display:flex; gap:5px; margin-top:7px; }
+  .task-actions button,.stale-row button { border:1px solid #30363d; background:#0d1117; color:#58a6ff; border-radius:5px; padding:3px 7px; font-size:10px; cursor:pointer; }
+  .task-actions .abandon,.stale-row .clear { color:#ff7b72; }
+  .stale-row { background:#161b22; border:1px solid #21262d; border-radius:6px; padding:8px 10px; color:#8b949e; font-size:11px; display:flex; align-items:center; gap:5px; }
+  .stale-row .clear { margin-left:auto; }
+
+  .no-tasks {
+    text-align: center;
+    color: #484f58;
+    font-size: 12px;
+    padding: 40px 0;
+  }
+
+  /* Session Stats Footer */
+  .session-footer {
+    border-top: 1px solid #21262d;
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 11px;
+    color: #484f58;
+  }
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .stat-value {
+    color: #8b949e;
+    font-weight: 700;
+  }
+  .stat-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* PIXEL ART SPRITES - each is 1px scaled up with box-shadow */
+  .sprite {
+    width: 1px;
+    height: 1px;
+    transform: scale(3);
+    position: absolute;
+  }
+
+  /* Atlas - Blue messy hair, dark hoodie, medium skin */
+  .sprite-atlas {
+    box-shadow:
+      5px 0 #58a6ff, 6px 0 #58a6ff, 7px 0 #58a6ff, 8px 0 #58a6ff, 9px 0 #58a6ff,
+      4px 1px #58a6ff, 5px 1px #4090e0, 6px 1px #58a6ff, 7px 1px #4090e0, 8px 1px #58a6ff, 9px 1px #58a6ff, 10px 1px #58a6ff,
+      4px 2px #58a6ff, 5px 2px #58a6ff, 6px 2px #4090e0, 7px 2px #58a6ff, 8px 2px #58a6ff, 9px 2px #4090e0, 10px 2px #58a6ff,
+      5px 3px #e8b88a, 6px 3px #e8b88a, 7px 3px #e8b88a, 8px 3px #e8b88a, 9px 3px #e8b88a,
+      5px 4px #e8b88a, 6px 4px #1a1a1a, 7px 4px #e8b88a, 8px 4px #1a1a1a, 9px 4px #e8b88a,
+      5px 5px #e8b88a, 6px 5px #e8b88a, 7px 5px #d4a57a, 8px 5px #e8b88a, 9px 5px #e8b88a,
+      6px 6px #e8b88a, 7px 6px #c9967a, 8px 6px #e8b88a,
+      4px 7px #2d333b, 5px 7px #2d333b, 6px 7px #2d333b, 7px 7px #3d444d, 8px 7px #2d333b, 9px 7px #2d333b, 10px 7px #2d333b,
+      4px 8px #2d333b, 5px 8px #2d333b, 6px 8px #3d444d, 7px 8px #2d333b, 8px 8px #3d444d, 9px 8px #2d333b, 10px 8px #2d333b,
+      4px 9px #2d333b, 5px 9px #e8b88a, 6px 9px #2d333b, 7px 9px #2d333b, 8px 9px #2d333b, 9px 9px #e8b88a, 10px 9px #2d333b,
+      5px 10px #e8b88a, 6px 10px #2d333b, 7px 10px #2d333b, 8px 10px #2d333b, 9px 10px #e8b88a,
+      5px 11px #2d333b, 6px 11px #2d333b, 7px 11px #2d333b, 8px 11px #2d333b, 9px 11px #2d333b;
+  }
+
+  /* Aziz - Black hair, orange polo, light skin, shopping bag */
+  .sprite-aziz {
+    box-shadow:
+      6px 0 #3d2b1f, 7px 0 #3d2b1f, 8px 0 #3d2b1f,
+      5px 1px #3d2b1f, 6px 1px #2a1d14, 7px 1px #3d2b1f, 8px 1px #2a1d14, 9px 1px #3d2b1f,
+      5px 2px #3d2b1f, 6px 2px #3d2b1f, 7px 2px #3d2b1f, 8px 2px #3d2b1f, 9px 2px #3d2b1f,
+      5px 3px #ffd5b3, 6px 3px #ffd5b3, 7px 3px #ffd5b3, 8px 3px #ffd5b3, 9px 3px #ffd5b3,
+      5px 4px #ffd5b3, 6px 4px #1a1a1a, 7px 4px #ffd5b3, 8px 4px #1a1a1a, 9px 4px #ffd5b3,
+      5px 5px #ffd5b3, 6px 5px #ffd5b3, 7px 5px #e8b88a, 8px 5px #ffd5b3, 9px 5px #ffd5b3,
+      6px 6px #ffd5b3, 7px 6px #d4a080, 8px 6px #ffd5b3,
+      4px 7px #f0883e, 5px 7px #f0883e, 6px 7px #f0883e, 7px 7px #ffffff, 8px 7px #f0883e, 9px 7px #f0883e, 10px 7px #f0883e,
+      4px 8px #f0883e, 5px 8px #f0883e, 6px 8px #f0883e, 7px 8px #f0883e, 8px 8px #f0883e, 9px 8px #f0883e, 10px 8px #f0883e,
+      4px 9px #ffd5b3, 5px 9px #f0883e, 6px 9px #f0883e, 7px 9px #f0883e, 8px 9px #f0883e, 9px 9px #f0883e, 10px 9px #ffd5b3,
+      5px 10px #f0883e, 6px 10px #f0883e, 7px 10px #f0883e, 8px 10px #f0883e, 9px 10px #f0883e,
+      11px 8px #8b5e3c, 12px 8px #8b5e3c, 11px 9px #8b5e3c, 12px 9px #8b5e3c, 11px 10px #8b5e3c, 12px 10px #8b5e3c;
+  }
+
+  /* Bibi - Brown bob, pink blazer, medium skin, clipboard */
+  .sprite-bibi {
+    box-shadow:
+      5px 0 #8b6914, 6px 0 #8b6914, 7px 0 #8b6914, 8px 0 #8b6914, 9px 0 #8b6914,
+      4px 1px #8b6914, 5px 1px #7a5c12, 6px 1px #8b6914, 7px 1px #8b6914, 8px 1px #7a5c12, 9px 1px #8b6914, 10px 1px #8b6914,
+      4px 2px #8b6914, 5px 2px #8b6914, 6px 2px #8b6914, 7px 2px #8b6914, 8px 2px #8b6914, 9px 2px #8b6914, 10px 2px #8b6914,
+      5px 3px #e8b88a, 6px 3px #e8b88a, 7px 3px #e8b88a, 8px 3px #e8b88a, 9px 3px #e8b88a,
+      4px 4px #8b6914, 5px 4px #e8b88a, 6px 4px #1a1a1a, 7px 4px #e8b88a, 8px 4px #1a1a1a, 9px 4px #e8b88a, 10px 4px #8b6914,
+      4px 5px #8b6914, 5px 5px #e8b88a, 6px 5px #e8b88a, 7px 5px #d4a57a, 8px 5px #e8b88a, 9px 5px #e8b88a, 10px 5px #8b6914,
+      6px 6px #e8b88a, 7px 6px #c9967a, 8px 6px #e8b88a,
+      4px 7px #f778ba, 5px 7px #f778ba, 6px 7px #f778ba, 7px 7px #e560a5, 8px 7px #f778ba, 9px 7px #f778ba, 10px 7px #f778ba,
+      4px 8px #f778ba, 5px 8px #f778ba, 6px 8px #e560a5, 7px 8px #f778ba, 8px 8px #e560a5, 9px 8px #f778ba, 10px 8px #f778ba,
+      4px 9px #e8b88a, 5px 9px #f778ba, 6px 9px #f778ba, 7px 9px #f778ba, 8px 9px #f778ba, 9px 9px #f778ba, 10px 9px #e8b88a,
+      5px 10px #f778ba, 6px 10px #f778ba, 7px 10px #f778ba, 8px 10px #f778ba, 9px 10px #f778ba,
+      11px 6px #d4a57a, 12px 6px #ffd5b3, 11px 7px #d4a57a, 12px 7px #ffd5b3, 11px 8px #d4a57a;
+  }
+
+  /* Dawood - Black slicked hair, teal outfit, light skin, glasses */
+  .sprite-dawood {
+    box-shadow:
+      5px 0 #1a1a1a, 6px 0 #1a1a1a, 7px 0 #1a1a1a, 8px 0 #1a1a1a, 9px 0 #1a1a1a,
+      5px 1px #1a1a1a, 6px 1px #111111, 7px 1px #1a1a1a, 8px 1px #111111, 9px 1px #1a1a1a,
+      5px 2px #1a1a1a, 6px 2px #1a1a1a, 7px 2px #1a1a1a, 8px 2px #1a1a1a, 9px 2px #1a1a1a,
+      5px 3px #ffd5b3, 6px 3px #ffd5b3, 7px 3px #ffd5b3, 8px 3px #ffd5b3, 9px 3px #ffd5b3,
+      4px 4px #58a6ff, 5px 4px #ffd5b3, 6px 4px #1a1a1a, 7px 4px #58a6ff, 8px 4px #1a1a1a, 9px 4px #ffd5b3, 10px 4px #58a6ff,
+      5px 5px #ffd5b3, 6px 5px #ffd5b3, 7px 5px #e8b88a, 8px 5px #ffd5b3, 9px 5px #ffd5b3,
+      6px 6px #ffd5b3, 7px 6px #d4a080, 8px 6px #ffd5b3,
+      4px 7px #39d2c0, 5px 7px #39d2c0, 6px 7px #39d2c0, 7px 7px #2ab8a8, 8px 7px #39d2c0, 9px 7px #39d2c0, 10px 7px #39d2c0,
+      4px 8px #39d2c0, 5px 8px #39d2c0, 6px 8px #2ab8a8, 7px 8px #39d2c0, 8px 8px #2ab8a8, 9px 8px #39d2c0, 10px 8px #39d2c0,
+      4px 9px #ffd5b3, 5px 9px #39d2c0, 6px 9px #39d2c0, 7px 9px #39d2c0, 8px 9px #39d2c0, 9px 9px #39d2c0, 10px 9px #ffd5b3,
+      5px 10px #39d2c0, 6px 10px #39d2c0, 7px 10px #39d2c0, 8px 10px #39d2c0, 9px 10px #39d2c0,
+      5px 11px #1a1a1a, 6px 11px #1a1a1a, 8px 11px #1a1a1a, 9px 11px #1a1a1a;
+  }
+
+  /* Ember - Spiky red hair, red jacket, medium skin */
+  .sprite-ember {
+    box-shadow:
+      4px 0 #da3633, 6px 0 #da3633, 8px 0 #da3633, 10px 0 #da3633,
+      5px 1px #da3633, 6px 1px #b62324, 7px 1px #da3633, 8px 1px #b62324, 9px 1px #da3633,
+      4px 2px #da3633, 5px 2px #b62324, 6px 2px #da3633, 7px 2px #b62324, 8px 2px #da3633, 9px 2px #b62324, 10px 2px #da3633,
+      5px 3px #e8b88a, 6px 3px #e8b88a, 7px 3px #e8b88a, 8px 3px #e8b88a, 9px 3px #e8b88a,
+      5px 4px #e8b88a, 6px 4px #1a1a1a, 7px 4px #e8b88a, 8px 4px #1a1a1a, 9px 4px #e8b88a,
+      5px 5px #e8b88a, 6px 5px #e8b88a, 7px 5px #d4a57a, 8px 5px #e8b88a, 9px 5px #e8b88a,
+      6px 6px #e8b88a, 7px 6px #c9967a, 8px 6px #e8b88a,
+      4px 7px #b62324, 5px 7px #b62324, 6px 7px #b62324, 7px 7px #8a1b1b, 8px 7px #b62324, 9px 7px #b62324, 10px 7px #b62324,
+      4px 8px #b62324, 5px 8px #b62324, 6px 8px #8a1b1b, 7px 8px #b62324, 8px 8px #8a1b1b, 9px 8px #b62324, 10px 8px #b62324,
+      4px 9px #e8b88a, 5px 9px #b62324, 6px 9px #b62324, 7px 9px #b62324, 8px 9px #b62324, 9px 9px #b62324, 10px 9px #e8b88a,
+      5px 10px #b62324, 6px 10px #b62324, 7px 10px #b62324, 8px 10px #b62324, 9px 10px #b62324,
+      5px 11px #1a1a1a, 6px 11px #1a1a1a, 8px 11px #1a1a1a, 9px 11px #1a1a1a;
+  }
+
+  /* Faris - Dark curly hair, green outfit, light skin */
+  .sprite-faris {
+    box-shadow:
+      5px 0 #2d1810, 7px 0 #2d1810, 9px 0 #2d1810,
+      4px 1px #2d1810, 5px 1px #3d2518, 6px 1px #2d1810, 7px 1px #3d2518, 8px 1px #2d1810, 9px 1px #3d2518, 10px 1px #2d1810,
+      5px 2px #2d1810, 6px 2px #3d2518, 7px 2px #2d1810, 8px 2px #3d2518, 9px 2px #2d1810,
+      5px 3px #ffd5b3, 6px 3px #ffd5b3, 7px 3px #ffd5b3, 8px 3px #ffd5b3, 9px 3px #ffd5b3,
+      5px 4px #ffd5b3, 6px 4px #1a1a1a, 7px 4px #ffd5b3, 8px 4px #1a1a1a, 9px 4px #ffd5b3,
+      5px 5px #ffd5b3, 6px 5px #ffd5b3, 7px 5px #e8b88a, 8px 5px #ffd5b3, 9px 5px #ffd5b3,
+      6px 6px #ffd5b3, 7px 6px #d4a080, 8px 6px #ffd5b3,
+      4px 7px #238636, 5px 7px #238636, 6px 7px #238636, 7px 7px #1a6b2a, 8px 7px #238636, 9px 7px #238636, 10px 7px #238636,
+      4px 8px #238636, 5px 8px #238636, 6px 8px #1a6b2a, 7px 8px #238636, 8px 8px #1a6b2a, 9px 8px #238636, 10px 8px #238636,
+      4px 9px #ffd5b3, 5px 9px #238636, 6px 9px #238636, 7px 9px #238636, 8px 9px #238636, 9px 9px #238636, 10px 9px #ffd5b3,
+      5px 10px #238636, 6px 10px #238636, 7px 10px #238636, 8px 10px #238636, 9px 10px #238636,
+      5px 11px #1a1a1a, 6px 11px #1a1a1a, 8px 11px #1a1a1a, 9px 11px #1a1a1a;
+  }
+
+  /* Hamza - Buzz cut, green vest, medium skin, magnifying glass */
+  .sprite-hamza {
+    box-shadow:
+      5px 0 #1a1a1a, 6px 0 #1a1a1a, 7px 0 #1a1a1a, 8px 0 #1a1a1a, 9px 0 #1a1a1a,
+      5px 1px #1a1a1a, 6px 1px #1a1a1a, 7px 1px #1a1a1a, 8px 1px #1a1a1a, 9px 1px #1a1a1a,
+      5px 2px #1a1a1a, 6px 2px #1a1a1a, 7px 2px #1a1a1a, 8px 2px #1a1a1a, 9px 2px #1a1a1a,
+      5px 3px #e8b88a, 6px 3px #e8b88a, 7px 3px #e8b88a, 8px 3px #e8b88a, 9px 3px #e8b88a,
+      5px 4px #e8b88a, 6px 4px #1a1a1a, 7px 4px #e8b88a, 8px 4px #1a1a1a, 9px 4px #e8b88a,
+      5px 5px #e8b88a, 6px 5px #e8b88a, 7px 5px #d4a57a, 8px 5px #e8b88a, 9px 5px #e8b88a,
+      6px 6px #e8b88a, 7px 6px #c9967a, 8px 6px #e8b88a,
+      4px 7px #238636, 5px 7px #e8b88a, 6px 7px #238636, 7px 7px #1a6b2a, 8px 7px #238636, 9px 7px #e8b88a, 10px 7px #238636,
+      4px 8px #238636, 5px 8px #e8b88a, 6px 8px #1a6b2a, 7px 8px #238636, 8px 8px #1a6b2a, 9px 8px #e8b88a, 10px 8px #238636,
+      4px 9px #e8b88a, 5px 9px #238636, 6px 9px #238636, 7px 9px #238636, 8px 9px #238636, 9px 9px #238636, 10px 9px #e8b88a,
+      5px 10px #238636, 6px 10px #238636, 7px 10px #238636, 8px 10px #238636, 9px 10px #238636,
+      11px 7px #8b949e, 12px 6px #8b949e, 12px 7px #8b949e, 13px 6px #8b949e, 11px 8px #6e4b22;
+  }
+
+  /* Khalid - Neat black hair, navy suit, light skin, tie */
+  .sprite-khalid {
+    box-shadow:
+      5px 0 #1a1a1a, 6px 0 #1a1a1a, 7px 0 #1a1a1a, 8px 0 #1a1a1a, 9px 0 #1a1a1a,
+      5px 1px #111111, 6px 1px #1a1a1a, 7px 1px #111111, 8px 1px #1a1a1a, 9px 1px #111111,
+      5px 2px #1a1a1a, 6px 2px #1a1a1a, 7px 2px #1a1a1a, 8px 2px #1a1a1a, 9px 2px #1a1a1a,
+      5px 3px #ffd5b3, 6px 3px #ffd5b3, 7px 3px #ffd5b3, 8px 3px #ffd5b3, 9px 3px #ffd5b3,
+      5px 4px #ffd5b3, 6px 4px #1a1a1a, 7px 4px #ffd5b3, 8px 4px #1a1a1a, 9px 4px #ffd5b3,
+      5px 5px #ffd5b3, 6px 5px #ffd5b3, 7px 5px #e8b88a, 8px 5px #ffd5b3, 9px 5px #ffd5b3,
+      6px 6px #ffd5b3, 7px 6px #d4a080, 8px 6px #ffd5b3,
+      4px 7px #1f6feb, 5px 7px #1f6feb, 6px 7px #1f6feb, 7px 7px #da3633, 8px 7px #1f6feb, 9px 7px #1f6feb, 10px 7px #1f6feb,
+      4px 8px #1f6feb, 5px 8px #1f6feb, 6px 8px #1f6feb, 7px 8px #da3633, 8px 8px #1f6feb, 9px 8px #1f6feb, 10px 8px #1f6feb,
+      4px 9px #ffd5b3, 5px 9px #1f6feb, 6px 9px #1f6feb, 7px 9px #da3633, 8px 9px #1f6feb, 9px 9px #1f6feb, 10px 9px #ffd5b3,
+      5px 10px #1f6feb, 6px 10px #1f6feb, 7px 10px #1f6feb, 8px 10px #1f6feb, 9px 10px #1f6feb,
+      5px 11px #1a1a1a, 6px 11px #1a1a1a, 8px 11px #1a1a1a, 9px 11px #1a1a1a;
+  }
+
+  /* Layla - Long black hair, gold outfit, medium skin */
+  .sprite-layla {
+    box-shadow:
+      5px 0 #1a1a1a, 6px 0 #1a1a1a, 7px 0 #1a1a1a, 8px 0 #1a1a1a, 9px 0 #1a1a1a,
+      4px 1px #1a1a1a, 5px 1px #111111, 6px 1px #1a1a1a, 7px 1px #1a1a1a, 8px 1px #111111, 9px 1px #1a1a1a, 10px 1px #1a1a1a,
+      4px 2px #1a1a1a, 5px 2px #1a1a1a, 6px 2px #1a1a1a, 7px 2px #1a1a1a, 8px 2px #1a1a1a, 9px 2px #1a1a1a, 10px 2px #1a1a1a,
+      4px 3px #1a1a1a, 5px 3px #e8b88a, 6px 3px #e8b88a, 7px 3px #e8b88a, 8px 3px #e8b88a, 9px 3px #e8b88a, 10px 3px #1a1a1a,
+      3px 4px #1a1a1a, 4px 4px #1a1a1a, 5px 4px #e8b88a, 6px 4px #1a1a1a, 7px 4px #e8b88a, 8px 4px #1a1a1a, 9px 4px #e8b88a, 10px 4px #1a1a1a, 11px 4px #1a1a1a,
+      3px 5px #1a1a1a, 5px 5px #e8b88a, 6px 5px #e8b88a, 7px 5px #d4a57a, 8px 5px #e8b88a, 9px 5px #e8b88a, 11px 5px #1a1a1a,
+      3px 6px #1a1a1a, 6px 6px #e8b88a, 7px 6px #c9967a, 8px 6px #e8b88a, 11px 6px #1a1a1a,
+      4px 7px #d29922, 5px 7px #d29922, 6px 7px #d29922, 7px 7px #b88520, 8px 7px #d29922, 9px 7px #d29922, 10px 7px #d29922,
+      3px 8px #1a1a1a, 4px 8px #d29922, 5px 8px #d29922, 6px 8px #b88520, 7px 8px #d29922, 8px 8px #b88520, 9px 8px #d29922, 10px 8px #d29922, 11px 8px #1a1a1a,
+      4px 9px #e8b88a, 5px 9px #d29922, 6px 9px #d29922, 7px 9px #d29922, 8px 9px #d29922, 9px 9px #d29922, 10px 9px #e8b88a,
+      5px 10px #d29922, 6px 10px #d29922, 7px 10px #d29922, 8px 10px #d29922, 9px 10px #d29922;
+  }
+
+  /* Luma - Purple dyed hair, purple hoodie, light skin */
+  .sprite-luma {
+    box-shadow:
+      5px 0 #8957e5, 6px 0 #8957e5, 7px 0 #8957e5, 8px 0 #8957e5, 9px 0 #8957e5,
+      4px 1px #8957e5, 5px 1px #7040c0, 6px 1px #8957e5, 7px 1px #7040c0, 8px 1px #8957e5, 9px 1px #7040c0, 10px 1px #8957e5,
+      5px 2px #8957e5, 6px 2px #7040c0, 7px 2px #8957e5, 8px 2px #7040c0, 9px 2px #8957e5,
+      5px 3px #ffd5b3, 6px 3px #ffd5b3, 7px 3px #ffd5b3, 8px 3px #ffd5b3, 9px 3px #ffd5b3,
+      5px 4px #ffd5b3, 6px 4px #1a1a1a, 7px 4px #ffd5b3, 8px 4px #1a1a1a, 9px 4px #ffd5b3,
+      5px 5px #ffd5b3, 6px 5px #ffd5b3, 7px 5px #e8b88a, 8px 5px #ffd5b3, 9px 5px #ffd5b3,
+      6px 6px #ffd5b3, 7px 6px #d4a080, 8px 6px #ffd5b3,
+      4px 7px #6e40c9, 5px 7px #6e40c9, 6px 7px #6e40c9, 7px 7px #5530a0, 8px 7px #6e40c9, 9px 7px #6e40c9, 10px 7px #6e40c9,
+      4px 8px #6e40c9, 5px 8px #6e40c9, 6px 8px #5530a0, 7px 8px #6e40c9, 8px 8px #5530a0, 9px 8px #6e40c9, 10px 8px #6e40c9,
+      4px 9px #ffd5b3, 5px 9px #6e40c9, 6px 9px #6e40c9, 7px 9px #6e40c9, 8px 9px #6e40c9, 9px 9px #6e40c9, 10px 9px #ffd5b3,
+      5px 10px #6e40c9, 6px 10px #6e40c9, 7px 10px #6e40c9, 8px 10px #6e40c9, 9px 10px #6e40c9,
+      5px 11px #1a1a1a, 6px 11px #1a1a1a, 8px 11px #1a1a1a, 9px 11px #1a1a1a;
+  }
+
+  /* Mona - Brown hair in bun, teal dress, medium skin */
+  .sprite-mona {
+    box-shadow:
+      6px 0 #5c3a1e, 7px 0 #5c3a1e, 8px 0 #5c3a1e,
+      5px 1px #5c3a1e, 6px 1px #5c3a1e, 7px 1px #4a2e16, 8px 1px #5c3a1e, 9px 1px #5c3a1e,
+      5px 2px #5c3a1e, 6px 2px #5c3a1e, 7px 2px #5c3a1e, 8px 2px #5c3a1e, 9px 2px #5c3a1e,
+      5px 3px #e8b88a, 6px 3px #e8b88a, 7px 3px #e8b88a, 8px 3px #e8b88a, 9px 3px #e8b88a,
+      5px 4px #e8b88a, 6px 4px #1a1a1a, 7px 4px #e8b88a, 8px 4px #1a1a1a, 9px 4px #e8b88a,
+      5px 5px #e8b88a, 6px 5px #e8b88a, 7px 5px #d4a57a, 8px 5px #e8b88a, 9px 5px #e8b88a,
+      6px 6px #e8b88a, 7px 6px #c9967a, 8px 6px #e8b88a,
+      4px 7px #1f9ead, 5px 7px #1f9ead, 6px 7px #1f9ead, 7px 7px #188a98, 8px 7px #1f9ead, 9px 7px #1f9ead, 10px 7px #1f9ead,
+      4px 8px #1f9ead, 5px 8px #1f9ead, 6px 8px #188a98, 7px 8px #1f9ead, 8px 8px #188a98, 9px 8px #1f9ead, 10px 8px #1f9ead,
+      4px 9px #e8b88a, 5px 9px #1f9ead, 6px 9px #1f9ead, 7px 9px #1f9ead, 8px 9px #1f9ead, 9px 9px #1f9ead, 10px 9px #e8b88a,
+      5px 10px #1f9ead, 6px 10px #1f9ead, 7px 10px #1f9ead, 8px 10px #1f9ead, 9px 10px #1f9ead;
+  }
+
+  /* Nexus - Silver hair, blue tech outfit, light skin, visor */
+  .sprite-nexus {
+    box-shadow:
+      5px 0 #c0c0c0, 6px 0 #c0c0c0, 7px 0 #c0c0c0, 8px 0 #c0c0c0, 9px 0 #c0c0c0,
+      4px 1px #c0c0c0, 5px 1px #a8a8a8, 6px 1px #c0c0c0, 7px 1px #a8a8a8, 8px 1px #c0c0c0, 9px 1px #a8a8a8, 10px 1px #c0c0c0,
+      5px 2px #c0c0c0, 6px 2px #c0c0c0, 7px 2px #c0c0c0, 8px 2px #c0c0c0, 9px 2px #c0c0c0,
+      5px 3px #ffd5b3, 6px 3px #ffd5b3, 7px 3px #ffd5b3, 8px 3px #ffd5b3, 9px 3px #ffd5b3,
+      4px 4px #58a6ff, 5px 4px #58a6ff, 6px 4px #00d4ff, 7px 4px #58a6ff, 8px 4px #00d4ff, 9px 4px #58a6ff, 10px 4px #58a6ff,
+      5px 5px #ffd5b3, 6px 5px #ffd5b3, 7px 5px #e8b88a, 8px 5px #ffd5b3, 9px 5px #ffd5b3,
+      6px 6px #ffd5b3, 7px 6px #d4a080, 8px 6px #ffd5b3,
+      4px 7px #388bfd, 5px 7px #388bfd, 6px 7px #388bfd, 7px 7px #2060c0, 8px 7px #388bfd, 9px 7px #388bfd, 10px 7px #388bfd,
+      4px 8px #388bfd, 5px 8px #388bfd, 6px 8px #2060c0, 7px 8px #388bfd, 8px 8px #2060c0, 9px 8px #388bfd, 10px 8px #388bfd,
+      4px 9px #ffd5b3, 5px 9px #388bfd, 6px 9px #388bfd, 7px 9px #388bfd, 8px 9px #388bfd, 9px 9px #388bfd, 10px 9px #ffd5b3,
+      5px 10px #388bfd, 6px 10px #388bfd, 7px 10px #388bfd, 8px 10px #388bfd, 9px 10px #388bfd,
+      5px 11px #1a1a1a, 6px 11px #1a1a1a, 8px 11px #1a1a1a, 9px 11px #1a1a1a;
+  }
+
+  /* Nizam - Grey hair, dark red suit, medium skin, formal */
+  .sprite-nizam {
+    box-shadow:
+      5px 0 #6e6e6e, 6px 0 #6e6e6e, 7px 0 #6e6e6e, 8px 0 #6e6e6e, 9px 0 #6e6e6e,
+      5px 1px #5a5a5a, 6px 1px #6e6e6e, 7px 1px #5a5a5a, 8px 1px #6e6e6e, 9px 1px #5a5a5a,
+      5px 2px #6e6e6e, 6px 2px #6e6e6e, 7px 2px #6e6e6e, 8px 2px #6e6e6e, 9px 2px #6e6e6e,
+      5px 3px #e8b88a, 6px 3px #e8b88a, 7px 3px #e8b88a, 8px 3px #e8b88a, 9px 3px #e8b88a,
+      5px 4px #e8b88a, 6px 4px #1a1a1a, 7px 4px #e8b88a, 8px 4px #1a1a1a, 9px 4px #e8b88a,
+      5px 5px #e8b88a, 6px 5px #e8b88a, 7px 5px #d4a57a, 8px 5px #e8b88a, 9px 5px #e8b88a,
+      6px 6px #e8b88a, 7px 6px #c9967a, 8px 6px #e8b88a,
+      4px 7px #b62324, 5px 7px #b62324, 6px 7px #b62324, 7px 7px #8b949e, 8px 7px #b62324, 9px 7px #b62324, 10px 7px #b62324,
+      4px 8px #b62324, 5px 8px #b62324, 6px 8px #8a1b1b, 7px 8px #b62324, 8px 8px #8a1b1b, 9px 8px #b62324, 10px 8px #b62324,
+      4px 9px #e8b88a, 5px 9px #b62324, 6px 9px #b62324, 7px 9px #b62324, 8px 9px #b62324, 9px 9px #b62324, 10px 9px #e8b88a,
+      5px 10px #b62324, 6px 10px #b62324, 7px 10px #b62324, 8px 10px #b62324, 9px 10px #b62324,
+      5px 11px #1a1a1a, 6px 11px #1a1a1a, 8px 11px #1a1a1a, 9px 11px #1a1a1a;
+  }
+
+  /* Nora - Wavy auburn hair, lavender outfit, light skin, glasses */
+  .sprite-nora {
+    box-shadow:
+      5px 0 #a0522d, 6px 0 #a0522d, 7px 0 #a0522d, 8px 0 #a0522d, 9px 0 #a0522d,
+      4px 1px #a0522d, 5px 1px #8b4526, 6px 1px #a0522d, 7px 1px #a0522d, 8px 1px #8b4526, 9px 1px #a0522d, 10px 1px #a0522d,
+      4px 2px #a0522d, 5px 2px #a0522d, 6px 2px #8b4526, 7px 2px #a0522d, 8px 2px #a0522d, 9px 2px #8b4526, 10px 2px #a0522d,
+      5px 3px #ffd5b3, 6px 3px #ffd5b3, 7px 3px #ffd5b3, 8px 3px #ffd5b3, 9px 3px #ffd5b3,
+      4px 4px #a371f7, 5px 4px #ffd5b3, 6px 4px #1a1a1a, 7px 4px #a371f7, 8px 4px #1a1a1a, 9px 4px #ffd5b3, 10px 4px #a371f7,
+      4px 5px #a0522d, 5px 5px #ffd5b3, 6px 5px #ffd5b3, 7px 5px #e8b88a, 8px 5px #ffd5b3, 9px 5px #ffd5b3, 10px 5px #a0522d,
+      6px 6px #ffd5b3, 7px 6px #d4a080, 8px 6px #ffd5b3,
+      4px 7px #a371f7, 5px 7px #a371f7, 6px 7px #a371f7, 7px 7px #8957e5, 8px 7px #a371f7, 9px 7px #a371f7, 10px 7px #a371f7,
+      4px 8px #a371f7, 5px 8px #a371f7, 6px 8px #8957e5, 7px 8px #a371f7, 8px 8px #8957e5, 9px 8px #a371f7, 10px 8px #a371f7,
+      4px 9px #ffd5b3, 5px 9px #a371f7, 6px 9px #a371f7, 7px 9px #a371f7, 8px 9px #a371f7, 9px 9px #a371f7, 10px 9px #ffd5b3,
+      5px 10px #a371f7, 6px 10px #a371f7, 7px 10px #a371f7, 8px 10px #a371f7, 9px 10px #a371f7;
+  }
+
+  /* Raqeeb - Black medium hair, deep purple, medium skin, chin-on-hand pose */
+  .sprite-raqeeb {
+    box-shadow:
+      5px 0 #1a1a1a, 6px 0 #1a1a1a, 7px 0 #1a1a1a, 8px 0 #1a1a1a, 9px 0 #1a1a1a,
+      4px 1px #1a1a1a, 5px 1px #1a1a1a, 6px 1px #111111, 7px 1px #1a1a1a, 8px 1px #111111, 9px 1px #1a1a1a, 10px 1px #1a1a1a,
+      5px 2px #1a1a1a, 6px 2px #1a1a1a, 7px 2px #1a1a1a, 8px 2px #1a1a1a, 9px 2px #1a1a1a,
+      5px 3px #e8b88a, 6px 3px #e8b88a, 7px 3px #e8b88a, 8px 3px #e8b88a, 9px 3px #e8b88a,
+      5px 4px #e8b88a, 6px 4px #1a1a1a, 7px 4px #e8b88a, 8px 4px #1a1a1a, 9px 4px #e8b88a,
+      5px 5px #e8b88a, 6px 5px #e8b88a, 7px 5px #d4a57a, 8px 5px #e8b88a, 9px 5px #e8b88a,
+      6px 6px #e8b88a, 7px 6px #c9967a, 8px 6px #e8b88a,
+      4px 7px #6e40c9, 5px 7px #6e40c9, 6px 7px #6e40c9, 7px 7px #5530a0, 8px 7px #6e40c9, 9px 7px #6e40c9, 10px 7px #6e40c9,
+      4px 8px #6e40c9, 5px 8px #6e40c9, 6px 8px #5530a0, 7px 8px #6e40c9, 8px 8px #5530a0, 9px 8px #6e40c9, 10px 8px #6e40c9,
+      4px 9px #6e40c9, 5px 9px #6e40c9, 6px 9px #6e40c9, 7px 9px #6e40c9, 8px 9px #6e40c9, 9px 9px #6e40c9, 10px 9px #e8b88a,
+      5px 10px #6e40c9, 6px 10px #6e40c9, 7px 10px #6e40c9, 8px 10px #6e40c9, 9px 10px #6e40c9,
+      10px 5px #e8b88a, 10px 6px #e8b88a;
+  }
+
+  /* Rawan - Straight long black hair, amber blazer, light skin */
+  .sprite-rawan {
+    box-shadow:
+      5px 0 #1a1a1a, 6px 0 #1a1a1a, 7px 0 #1a1a1a, 8px 0 #1a1a1a, 9px 0 #1a1a1a,
+      4px 1px #1a1a1a, 5px 1px #1a1a1a, 6px 1px #1a1a1a, 7px 1px #1a1a1a, 8px 1px #1a1a1a, 9px 1px #1a1a1a, 10px 1px #1a1a1a,
+      4px 2px #1a1a1a, 5px 2px #1a1a1a, 6px 2px #1a1a1a, 7px 2px #1a1a1a, 8px 2px #1a1a1a, 9px 2px #1a1a1a, 10px 2px #1a1a1a,
+      4px 3px #1a1a1a, 5px 3px #ffd5b3, 6px 3px #ffd5b3, 7px 3px #ffd5b3, 8px 3px #ffd5b3, 9px 3px #ffd5b3, 10px 3px #1a1a1a,
+      3px 4px #1a1a1a, 5px 4px #ffd5b3, 6px 4px #1a1a1a, 7px 4px #ffd5b3, 8px 4px #1a1a1a, 9px 4px #ffd5b3, 11px 4px #1a1a1a,
+      3px 5px #1a1a1a, 5px 5px #ffd5b3, 6px 5px #ffd5b3, 7px 5px #e8b88a, 8px 5px #ffd5b3, 9px 5px #ffd5b3, 11px 5px #1a1a1a,
+      3px 6px #1a1a1a, 6px 6px #ffd5b3, 7px 6px #d4a080, 8px 6px #ffd5b3, 11px 6px #1a1a1a,
+      4px 7px #e3b341, 5px 7px #e3b341, 6px 7px #e3b341, 7px 7px #c99a30, 8px 7px #e3b341, 9px 7px #e3b341, 10px 7px #e3b341,
+      3px 8px #1a1a1a, 4px 8px #e3b341, 5px 8px #e3b341, 6px 8px #c99a30, 7px 8px #e3b341, 8px 8px #c99a30, 9px 8px #e3b341, 10px 8px #e3b341, 11px 8px #1a1a1a,
+      4px 9px #ffd5b3, 5px 9px #e3b341, 6px 9px #e3b341, 7px 9px #e3b341, 8px 9px #e3b341, 9px 9px #e3b341, 10px 9px #ffd5b3,
+      5px 10px #e3b341, 6px 10px #e3b341, 7px 10px #e3b341, 8px 10px #e3b341, 9px 10px #e3b341;
+  }
+
+  /* Saif - Brown styled hair, magenta outfit, medium skin */
+  .sprite-saif {
+    box-shadow:
+      6px 0 #4a3728, 7px 0 #4a3728, 8px 0 #4a3728, 9px 0 #4a3728,
+      5px 1px #4a3728, 6px 1px #3a2a1e, 7px 1px #4a3728, 8px 1px #3a2a1e, 9px 1px #4a3728,
+      5px 2px #4a3728, 6px 2px #4a3728, 7px 2px #4a3728, 8px 2px #4a3728, 9px 2px #4a3728,
+      5px 3px #e8b88a, 6px 3px #e8b88a, 7px 3px #e8b88a, 8px 3px #e8b88a, 9px 3px #e8b88a,
+      5px 4px #e8b88a, 6px 4px #1a1a1a, 7px 4px #e8b88a, 8px 4px #1a1a1a, 9px 4px #e8b88a,
+      5px 5px #e8b88a, 6px 5px #e8b88a, 7px 5px #d4a57a, 8px 5px #e8b88a, 9px 5px #e8b88a,
+      6px 6px #e8b88a, 7px 6px #c9967a, 8px 6px #e8b88a,
+      4px 7px #db61a2, 5px 7px #db61a2, 6px 7px #db61a2, 7px 7px #c04890, 8px 7px #db61a2, 9px 7px #db61a2, 10px 7px #db61a2,
+      4px 8px #db61a2, 5px 8px #db61a2, 6px 8px #c04890, 7px 8px #db61a2, 8px 8px #c04890, 9px 8px #db61a2, 10px 8px #db61a2,
+      4px 9px #e8b88a, 5px 9px #db61a2, 6px 9px #db61a2, 7px 9px #db61a2, 8px 9px #db61a2, 9px 9px #db61a2, 10px 9px #e8b88a,
+      5px 10px #db61a2, 6px 10px #db61a2, 7px 10px #db61a2, 8px 10px #db61a2, 9px 10px #db61a2,
+      5px 11px #1a1a1a, 6px 11px #1a1a1a, 8px 11px #1a1a1a, 9px 11px #1a1a1a;
+  }
+
+  /* Sora - Pink short hair, rose smock, light skin, beret */
+  .sprite-sora {
+    box-shadow:
+      6px -1px #f778ba, 7px -1px #f778ba, 8px -1px #f778ba,
+      5px 0 #e560a5, 6px 0 #f778ba, 7px 0 #e560a5, 8px 0 #f778ba, 9px 0 #e560a5,
+      5px 1px #f778ba, 6px 1px #f778ba, 7px 1px #f778ba, 8px 1px #f778ba, 9px 1px #f778ba,
+      5px 2px #f778ba, 6px 2px #e560a5, 7px 2px #f778ba, 8px 2px #e560a5, 9px 2px #f778ba,
+      5px 3px #ffd5b3, 6px 3px #ffd5b3, 7px 3px #ffd5b3, 8px 3px #ffd5b3, 9px 3px #ffd5b3,
+      5px 4px #ffd5b3, 6px 4px #1a1a1a, 7px 4px #ffd5b3, 8px 4px #1a1a1a, 9px 4px #ffd5b3,
+      5px 5px #ffd5b3, 6px 5px #ffd5b3, 7px 5px #e8b88a, 8px 5px #ffd5b3, 9px 5px #ffd5b3,
+      6px 6px #ffd5b3, 7px 6px #d4a080, 8px 6px #ffd5b3,
+      4px 7px #f778ba, 5px 7px #f778ba, 6px 7px #f778ba, 7px 7px #e560a5, 8px 7px #f778ba, 9px 7px #f778ba, 10px 7px #f778ba,
+      4px 8px #f778ba, 5px 8px #f778ba, 6px 8px #e560a5, 7px 8px #f778ba, 8px 8px #e560a5, 9px 8px #f778ba, 10px 8px #f778ba,
+      4px 9px #ffd5b3, 5px 9px #f778ba, 6px 9px #f778ba, 7px 9px #f778ba, 8px 9px #f778ba, 9px 9px #f778ba, 10px 9px #ffd5b3,
+      5px 10px #f778ba, 6px 10px #f778ba, 7px 10px #f778ba, 8px 10px #f778ba, 9px 10px #f778ba;
+  }
+
+  /* Sultan - Formal black hair, gold suit, medium skin, crown */
+  .sprite-sultan {
+    box-shadow:
+      5px -1px #d4a72c, 7px -1px #d4a72c, 9px -1px #d4a72c,
+      5px 0 #d4a72c, 6px 0 #d4a72c, 7px 0 #d4a72c, 8px 0 #d4a72c, 9px 0 #d4a72c,
+      5px 1px #1a1a1a, 6px 1px #111111, 7px 1px #1a1a1a, 8px 1px #111111, 9px 1px #1a1a1a,
+      5px 2px #1a1a1a, 6px 2px #1a1a1a, 7px 2px #1a1a1a, 8px 2px #1a1a1a, 9px 2px #1a1a1a,
+      5px 3px #e8b88a, 6px 3px #e8b88a, 7px 3px #e8b88a, 8px 3px #e8b88a, 9px 3px #e8b88a,
+      5px 4px #e8b88a, 6px 4px #1a1a1a, 7px 4px #e8b88a, 8px 4px #1a1a1a, 9px 4px #e8b88a,
+      5px 5px #e8b88a, 6px 5px #e8b88a, 7px 5px #d4a57a, 8px 5px #e8b88a, 9px 5px #e8b88a,
+      6px 6px #e8b88a, 7px 6px #c9967a, 8px 6px #e8b88a,
+      4px 7px #d4a72c, 5px 7px #d4a72c, 6px 7px #d4a72c, 7px 7px #b89025, 8px 7px #d4a72c, 9px 7px #d4a72c, 10px 7px #d4a72c,
+      4px 8px #d4a72c, 5px 8px #d4a72c, 6px 8px #b89025, 7px 8px #d4a72c, 8px 8px #b89025, 9px 8px #d4a72c, 10px 8px #d4a72c,
+      4px 9px #e8b88a, 5px 9px #d4a72c, 6px 9px #d4a72c, 7px 9px #d4a72c, 8px 9px #d4a72c, 9px 9px #d4a72c, 10px 9px #e8b88a,
+      5px 10px #d4a72c, 6px 10px #d4a72c, 7px 10px #d4a72c, 8px 10px #d4a72c, 9px 10px #d4a72c,
+      5px 11px #1a1a1a, 6px 11px #1a1a1a, 8px 11px #1a1a1a, 9px 11px #1a1a1a;
+  }
+
+  /* Taleen - Brown ponytail, sky blue outfit, light skin */
+  .sprite-taleen {
+    box-shadow:
+      5px 0 #6b4423, 6px 0 #6b4423, 7px 0 #6b4423, 8px 0 #6b4423, 9px 0 #6b4423,
+      5px 1px #6b4423, 6px 1px #5a3818, 7px 1px #6b4423, 8px 1px #5a3818, 9px 1px #6b4423, 10px 1px #6b4423,
+      5px 2px #6b4423, 6px 2px #6b4423, 7px 2px #6b4423, 8px 2px #6b4423, 9px 2px #6b4423, 10px 2px #6b4423, 11px 2px #6b4423,
+      5px 3px #ffd5b3, 6px 3px #ffd5b3, 7px 3px #ffd5b3, 8px 3px #ffd5b3, 9px 3px #ffd5b3, 10px 3px #6b4423, 11px 3px #6b4423,
+      5px 4px #ffd5b3, 6px 4px #1a1a1a, 7px 4px #ffd5b3, 8px 4px #1a1a1a, 9px 4px #ffd5b3, 10px 4px #6b4423,
+      5px 5px #ffd5b3, 6px 5px #ffd5b3, 7px 5px #e8b88a, 8px 5px #ffd5b3, 9px 5px #ffd5b3,
+      6px 6px #ffd5b3, 7px 6px #d4a080, 8px 6px #ffd5b3,
+      4px 7px #79c0ff, 5px 7px #79c0ff, 6px 7px #79c0ff, 7px 7px #5aa8e8, 8px 7px #79c0ff, 9px 7px #79c0ff, 10px 7px #79c0ff,
+      4px 8px #79c0ff, 5px 8px #79c0ff, 6px 8px #5aa8e8, 7px 8px #79c0ff, 8px 8px #5aa8e8, 9px 8px #79c0ff, 10px 8px #79c0ff,
+      4px 9px #ffd5b3, 5px 9px #79c0ff, 6px 9px #79c0ff, 7px 9px #79c0ff, 8px 9px #79c0ff, 9px 9px #79c0ff, 10px 9px #ffd5b3,
+      5px 10px #79c0ff, 6px 10px #79c0ff, 7px 10px #79c0ff, 8px 10px #79c0ff, 9px 10px #79c0ff;
+  }
+
+  /* Wahab - Fade haircut, orange outfit, medium skin, headphones */
+  .sprite-wahab {
+    box-shadow:
+      5px 0 #1a1a1a, 6px 0 #1a1a1a, 7px 0 #1a1a1a, 8px 0 #1a1a1a, 9px 0 #1a1a1a,
+      4px 1px #484f58, 5px 1px #1a1a1a, 6px 1px #1a1a1a, 7px 1px #1a1a1a, 8px 1px #1a1a1a, 9px 1px #1a1a1a, 10px 1px #484f58,
+      4px 2px #484f58, 5px 2px #1a1a1a, 6px 2px #1a1a1a, 7px 2px #1a1a1a, 8px 2px #1a1a1a, 9px 2px #1a1a1a, 10px 2px #484f58,
+      4px 3px #da3633, 5px 3px #e8b88a, 6px 3px #e8b88a, 7px 3px #e8b88a, 8px 3px #e8b88a, 9px 3px #e8b88a, 10px 3px #da3633,
+      4px 4px #da3633, 5px 4px #e8b88a, 6px 4px #1a1a1a, 7px 4px #e8b88a, 8px 4px #1a1a1a, 9px 4px #e8b88a, 10px 4px #da3633,
+      5px 5px #e8b88a, 6px 5px #e8b88a, 7px 5px #d4a57a, 8px 5px #e8b88a, 9px 5px #e8b88a,
+      6px 6px #e8b88a, 7px 6px #c9967a, 8px 6px #e8b88a,
+      4px 7px #f0883e, 5px 7px #f0883e, 6px 7px #f0883e, 7px 7px #d47030, 8px 7px #f0883e, 9px 7px #f0883e, 10px 7px #f0883e,
+      4px 8px #f0883e, 5px 8px #f0883e, 6px 8px #d47030, 7px 8px #f0883e, 8px 8px #d47030, 9px 8px #f0883e, 10px 8px #f0883e,
+      4px 9px #e8b88a, 5px 9px #f0883e, 6px 9px #f0883e, 7px 9px #f0883e, 8px 9px #f0883e, 9px 9px #f0883e, 10px 9px #e8b88a,
+      5px 10px #f0883e, 6px 10px #f0883e, 7px 10px #f0883e, 8px 10px #f0883e, 9px 10px #f0883e,
+      5px 11px #1a1a1a, 6px 11px #1a1a1a, 8px 11px #1a1a1a, 9px 11px #1a1a1a;
+  }
+</style>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- LEFT PANEL: Pixel Art Office -->
+    <div class="office-panel">
+      <!-- Wall with logo, clock, and counter -->
+      <div class="office-wall">
+        <button class="wall-counter" id="activeFilter" aria-pressed="false"><span class="count" id="activeCount">0</span> active</button>
+        <img src="/logo.svg" alt="Falaq Solutions" class="wall-logo" id="wallLogo">
+        <div class="wall-decor">
+          <div class="wall-clock"></div>
+        </div>
+      </div>
+
+      <!-- Floor area with desks -->
+      <div class="office-floor">
+        <div class="office-rug"></div>
+        <div class="office-grid" id="officeGrid"></div>
+
+        <!-- Furniture along the bottom -->
+        <div class="office-furniture">
+          <div class="plant-tall"></div>
+          <div class="bookshelf"></div>
+          <div class="coffee-mug"></div>
+          <div class="water-cooler"></div>
+          <div class="plant-cactus"></div>
+          <div class="plant-tall"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Info -->
+    <div class="info-panel">
+      <div class="panel-header">Agent Dashboard</div>
+
+      <!-- Usage Meter -->
+      <div class="usage-section">
+        <div class="usage-label">
+          <span>Weekly tokens vs limit</span>
+          <span id="usageDayLabel">Day 0 of 7</span>
+        </div>
+        <div class="usage-bar-bg">
+          <div class="usage-bar-fill green" id="usageBarFill" style="width: 0%">0%</div>
+        </div>
+        <div class="pace-indicator">
+          <span id="usageCallsText" style="color: #8b949e;">projection unavailable</span>
+          <span class="pace-badge pace-green" id="paceBadge">On pace</span>
+        </div>
+        <div class="model-tiles"><div class="model-tile">Claude<b id="claudeWeek">—</b></div><div class="model-tile">Codex<b id="codexWeek">—</b></div></div>
+      </div>
+
+      <div class="needs-strip" id="needsStrip"></div>
+      <div class="duplicate-strip" id="duplicateStrip"></div>
+
+      <!-- Task List -->
+      <div class="panel-header" style="border-top: none;">Active Tasks</div>
+      <div class="task-section" id="taskList">
+        <div class="no-tasks">No active tasks. Agents are idle.</div>
+      </div>
+
+      <!-- Session Stats Footer -->
+      <div class="session-footer">
+        <div class="stat-item">
+          <span class="stat-value" id="sessionDuration">0:00:00</span>
+          <span class="stat-label">Cockpit open duration</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="dayCalls">0</span>
+          <span class="stat-label">tool calls · last 24h</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="weekCalls">0</span>
+          <span class="stat-label">tool calls · last 7d</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const AGENT_ROSTER = {
+  'Atlas':  { color: '#58a6ff', desk: 0 },
+  'Aziz':   { color: '#f0883e', desk: 1 },
+  'Bibi':   { color: '#f778ba', desk: 2 },
+  'Dawood': { color: '#39d2c0', desk: 3 },
+  'Ember':  { color: '#da3633', desk: 4 },
+  'Faris':  { color: '#3fb950', desk: 5 },
+  'Hamza':  { color: '#238636', desk: 6 },
+  'Khalid': { color: '#1f6feb', desk: 7 },
+  'Layla':  { color: '#d29922', desk: 8 },
+  'Luma':   { color: '#8957e5', desk: 9 },
+  'Mona':   { color: '#1f9ead', desk: 10 },
+  'Nexus':  { color: '#388bfd', desk: 11 },
+  'Nizam':  { color: '#b62324', desk: 12 },
+  'Nora':   { color: '#a371f7', desk: 13 },
+  'Raqeeb': { color: '#6e40c9', desk: 14 },
+  'Rawan':  { color: '#e3b341', desk: 15 },
+  'Saif':   { color: '#db61a2', desk: 16 },
+  'Sora':   { color: '#f778ba', desk: 17 },
+  'Sultan': { color: '#d4a72c', desk: 18 },
+  'Taleen': { color: '#79c0ff', desk: 19 },
+  'Wahab':  { color: '#f0883e', desk: 20 }
+};
+
+let lastTimestamp = 0;
+let sessionStart = Date.now();
+let doneTimers = {};
+let TOKEN = '', staleOpen = false, taskCache = [], activeOnly = false, duplicateCache = [];
+const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtTok = n => n>=1e9?(n/1e9).toFixed(1)+'B':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'k':String(n||0);
+const headers = () => ({'x-cockpit-token':TOKEN,'content-type':'application/json'});
+fetch('/api/token').then(r=>r.text()).then(t=>{TOKEN=t;}).catch(()=>{});
+document.getElementById('wallLogo').addEventListener('error', e => { e.currentTarget.style.display='none'; });
+
+// Build the office grid
+function buildOffice() {
+  const grid = document.getElementById('officeGrid');
+  const names = Object.keys(AGENT_ROSTER);
+  names.forEach(name => {
+    const cell = document.createElement('div');
+    cell.className = 'desk-cell idle';
+    cell.id = 'desk-' + name;
+    cell.innerHTML = `
+      <div class="sprite-container">
+        <div class="sprite sprite-${name.toLowerCase()}"></div>
+        <div class="zzz">zzz</div>
+        <div class="sparkle"><span></span></div>
+      </div>
+      <div class="desk-surface">
+        <div class="desk-monitor"></div>
+      </div>
+      <div class="agent-name" style="color: ${AGENT_ROSTER[name].color}">${name}</div>
+      <div class="agent-status-text">idle</div>
+    `;
+    grid.appendChild(cell);
+  });
+}
+
+function setAgentState(name, status) {
+  const cell = document.getElementById('desk-' + name);
+  if (!cell) return;
+  const info = AGENT_ROSTER[name];
+  const statusText = cell.querySelector('.agent-status-text');
+  const nameEl = cell.querySelector('.agent-name');
+
+  cell.className = 'desk-cell';
+
+  if (status === 'executing' || status === 'planning' || status === 'reviewing') {
+    cell.classList.add('active');
+    statusText.textContent = status;
+    statusText.style.color = info.color;
+    nameEl.style.color = info.color;
+    nameEl.style.cssText = `color: ${info.color}`;
+    // Set dot color
+    const style = `color: ${info.color}`;
+    nameEl.setAttribute('style', style);
+    statusText.setAttribute('style', `color: ${info.color}`);
+
+    // Clear done timer if re-activated
+    if (doneTimers[name]) {
+      clearTimeout(doneTimers[name]);
+      delete doneTimers[name];
+    }
+  } else if (status === 'done' || status === 'completed') {
+    cell.classList.add('done');
+    statusText.textContent = 'done';
+    statusText.style.color = '#3fb950';
+    nameEl.style.color = info.color;
+
+    // Return to idle after 5s
+    if (!doneTimers[name]) {
+      doneTimers[name] = setTimeout(() => {
+        setAgentState(name, 'idle');
+        delete doneTimers[name];
+      }, 5000);
+    }
+  } else {
+    cell.classList.add('idle');
+    statusText.textContent = 'idle';
+    statusText.style.color = '#484f58';
+    nameEl.style.color = '#484f58';
+  }
+}
+
+function updateOffice(agents) {
+  const activeNames = new Set();
+  if (agents) {
+    Object.keys(agents).forEach(name => {
+      if (AGENT_ROSTER[name]) {
+        activeNames.add(name);
+        setAgentState(name, agents[name].status || 'executing');
+      }
+    });
+  }
+  // Set remaining to idle (only if not in done state)
+  Object.keys(AGENT_ROSTER).forEach(name => {
+    if (!activeNames.has(name)) {
+      const cell = document.getElementById('desk-' + name);
+      if (cell && !cell.classList.contains('done')) {
+        setAgentState(name, 'idle');
+      }
+    }
+  });
+  // Update wall counter
+  const counter = document.getElementById('activeCount');
+  if (counter) counter.textContent = activeNames.size;
+}
+
+function updateTasks(tasks) {
+  const container = document.getElementById('taskList');
+  taskCache = Array.isArray(tasks) ? tasks : [];
+  const live = taskCache.filter(t => t.displayState === 'live');
+  const stale = taskCache.filter(t => t.displayState === 'stale');
+  const card = t => {
+    const agentColor = AGENT_ROSTER[t.agent] ? AGENT_ROSTER[t.agent].color : '#8b949e';
+    return `
+      <div class="task-card status-executing" data-session="${esc(t.sessionId || '')}">
+        <div class="task-card-header">
+          <span class="status-badge badge-executing">LIVE</span>
+          <span class="task-time">${esc(t.relativeTime || '')}</span>
+        </div>
+        <div class="task-agent" style="color: ${agentColor}">${esc(t.agent || 'Session task')}</div>
+        <div class="task-desc">${esc(t.task || 'No description')}</div>
+        <div class="task-actions"><button data-task-action="completed" data-task-key="${esc(t.key)}">✓ done</button><button class="abandon" data-task-action="abandoned" data-task-key="${esc(t.key)}">abandon</button></div>
+      </div>
+    `;
+  };
+  container.innerHTML = (live.map(card).join('') || '<div class="no-tasks">No live tasks. Agents are idle.</div>') +
+    (stale.length ? `${staleOpen ? stale.map(card).join('') : ''}<div class="stale-row"><span>${stale.length} stale tasks ·</span><button data-stale-toggle>${staleOpen?'hide':'show'}</button><button class="clear" data-stale-clear>clear all</button></div>` : '');
+}
+
+function updateUsage(usage) {
+  if (!usage) return;
+  const p = usage.weekProjection, pct = p && p.pct != null ? Math.min(100, p.pct) : 0;
+  const bar = document.getElementById('usageBarFill');
+  bar.style.width = pct + '%';
+  bar.textContent = pct + '%';
+
+  // Color class
+  bar.className = 'usage-bar-fill';
+  if (pct < 60) bar.classList.add('green');
+  else if (pct < 80) bar.classList.add('yellow');
+  else bar.classList.add('red');
+
+  document.getElementById('usageDayLabel').textContent = usage.week && (usage.week.week || usage.week.period) ? 'current week' : 'weekly data unavailable';
+  document.getElementById('usageCallsText').textContent = p ? `${fmtTok(p.tokens)}${p.cap?' / '+fmtTok(p.cap):' tokens'} · ${p.exhaustionDay==='limit reached'?'limit reached':p.exhaustionDay?'at this pace: '+p.exhaustionDay:'within weekly pace'}` : 'projection unavailable';
+  const badge = document.getElementById('paceBadge');
+  if (!p || p.withinLimit !== false) {
+    badge.textContent = 'On pace';
+    badge.className = 'pace-badge pace-green';
+  } else {
+    badge.textContent = 'Exhausts early';
+    badge.className = 'pace-badge pace-red';
+  }
+  document.getElementById('claudeWeek').textContent = usage.week ? fmtTok(usage.week.totalTokens) : '—';
+  document.getElementById('codexWeek').textContent = usage.codexWeek ? fmtTok(usage.codexWeek.totalTokens) : '—';
+}
+
+function updateNeeds(sessions, tasks) {
+  const waiting=(sessions||[]).filter(s=>s.state==='needs_you'), ids=new Set(waiting.map(s=>s.sessionId));
+  const gates=(tasks||[]).filter(t=>['live','stale'].includes(t.displayState)&&!ids.has(t.sessionId)&&/^\s*🔒\s*GATE\s*:/i.test(t.task||''));
+  const labels=[...waiting.map(s=>s.purposeTitle||s.client||'waiting session'),...gates.map(t=>t.task)], el=document.getElementById('needsStrip');
+  el.textContent=labels.length?`Needs you: ${labels.length} · ${labels.join(' · ')}`:''; el.classList.toggle('show',!!labels.length);
+}
+
+function updateDuplicates(data) {
+  duplicateCache=data&&Array.isArray(data.pairs)?data.pairs:[]; const p=duplicateCache[0], el=document.getElementById('duplicateStrip');
+  if(!p){el.innerHTML='';el.classList.remove('show');return;}
+  el.innerHTML=`<span class="copy">Possible duplicate work: ${esc(p.a.purposeTitle)} ↔ ${esc(p.b.purposeTitle)}${p.status==='unconfirmed'?' (unconfirmed)':''}</span><button data-dup-dismiss>not a duplicate</button><button data-dup-open>open both</button>`; el.classList.add('show');
+}
+
+function formatTime(ms) {
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
+}
+
+function formatDuration(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+async function pollEvents() {
+  try {
+    const [data,usage,sessions,duplicates] = await Promise.all([
+      fetch(`/api/events?since=${lastTimestamp}`).then(r=>r.json()), fetch('/api/usage').then(r=>r.json()),
+      fetch('/api/sessions').then(r=>r.json()), fetch('/api/duplicates').then(r=>r.json())]);
+    lastTimestamp = data.serverTime || Date.now();
+    updateOffice(data.agents);
+    updateTasks(data.tasks);
+    updateUsage(usage); updateNeeds(sessions,data.tasks); updateDuplicates(duplicates);
+    document.getElementById('dayCalls').textContent=Number(data.stats&&data.stats.dayCalls||0).toLocaleString();
+    document.getElementById('weekCalls').textContent=Number(data.stats&&data.stats.weekCalls||0).toLocaleString();
+  } catch (e) {
+    // Server not ready yet — keep polling
+  }
+}
+
+// Build office on load
+buildOffice();
+document.getElementById('activeFilter').addEventListener('click',e=>{activeOnly=!activeOnly;e.currentTarget.setAttribute('aria-pressed',String(activeOnly));document.querySelector('.office-floor').classList.toggle('active-only',activeOnly);});
+document.getElementById('taskList').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-stale-toggle')){staleOpen=!staleOpen;updateTasks(taskCache);return;}const keys=b.hasAttribute('data-stale-clear')?taskCache.filter(t=>t.displayState==='stale').map(t=>t.key):b.dataset.taskKey?[b.dataset.taskKey]:[];const status=b.hasAttribute('data-stale-clear')?'abandoned':b.dataset.taskAction;if(keys.length&&TOKEN){const r=await fetch('/api/tasks/actions',{method:'POST',headers:headers(),body:JSON.stringify({taskKeys:keys,status})});if(r.ok)pollEvents();}});
+document.getElementById('duplicateStrip').addEventListener('click',async e=>{const p=duplicateCache[0];if(!p)return;if(e.target.hasAttribute('data-dup-dismiss')&&TOKEN){const r=await fetch('/api/duplicates/dismiss',{method:'POST',headers:headers(),body:JSON.stringify({pairKey:p.pairKey})});if(r.ok)updateDuplicates({pairs:duplicateCache.slice(1)});}if(e.target.hasAttribute('data-dup-open'))for(const side of [p.a,p.b]){if(side.chatName)window.open('/chat?name='+encodeURIComponent(side.chatName),'_blank','noopener');else{const card=document.querySelector(`[data-session="${CSS.escape(side.sessionId)}"]`);if(card){card.scrollIntoView({behavior:'smooth'});card.classList.add('duplicate-focus');}}}});
+
+// Poll every 2 seconds
+setInterval(pollEvents, 2000);
+pollEvents();
+
+// Update session timer every second
+setInterval(() => {
+  const elapsed = Date.now() - sessionStart;
+  document.getElementById('sessionDuration').textContent = formatDuration(elapsed);
+}, 1000);
+
+// Add active dot color via dynamic style
+const dotStyle = document.createElement('style');
+dotStyle.textContent = Object.keys(AGENT_ROSTER).map(name => {
+  const c = AGENT_ROSTER[name].color;
+  return `#desk-${name}.active .agent-name::before { background: ${c}; }`;
+}).join('\n');
+document.head.appendChild(dotStyle);
+</script>
+</body>
+</html>

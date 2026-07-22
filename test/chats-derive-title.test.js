@@ -25,13 +25,13 @@ test('deriveTitle strips filler prefixes and uses the first sentence or line', (
   assert.strictEqual(chats.deriveTitle('Summarize the results\nthen publish them'), 'Summarize the results');
 });
 
-test('deriveTitle caps titles at six words and 48 characters without cutting a word', (t) => {
+test('deriveTitle caps titles at eight words and 80 characters without cutting a word', (t) => {
   const { chats } = setup(t);
-  const six = chats.deriveTitle('one two three four five six seven eight');
-  assert.strictEqual(six, 'one two three four five six');
-  const chars = chats.deriveTitle('investigate extraordinarilylongword regression today');
-  assert.ok(chars.length <= 48);
-  assert.ok(!chars.endsWith('extraordinarilylongwor'));
+  const eight = chats.deriveTitle('one two three four five six seven eight nine');
+  assert.strictEqual(eight, 'one two three four five six seven eight');
+  const chars = chats.deriveTitle('investigate extraordinarilylongword anotherextraordinarilylongword regression today');
+  assert.ok(chars.length <= 80);
+  assert.ok(!chars.endsWith('anotherextraordinarilylongwor'));
 });
 
 test('deriveTitle returns empty for empty, whitespace, or filler-only prompts', (t) => {

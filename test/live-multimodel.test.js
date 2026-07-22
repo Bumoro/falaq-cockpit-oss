@@ -1,0 +1,113 @@
+const { test } = require('node:test');
+const assert = require('node:assert');
+const fs = require('fs');
+const path = require('path');
+
+test('/live exposes provider-aware cards, usage tiles, and chat launch controls', () => {
+  const html = fs.readFileSync(path.join(process.env.CK_REPO_ROOT, 'src/live.html'), 'utf8');
+  assert.match(html, /class="badge provider"/);
+  assert.match(html, /<select id="mProvider">/);
+  assert.match(html, /value="codex">Codex/);
+  assert.match(html, /provider:document\.getElementById\('mProvider'\)\.value/);
+  assert.match(html, /<span class="cap">claude<\/span>/);
+  assert.match(html, /<span class="cap">codex<\/span>/);
+  assert.match(html, /usage&&usage\.codexWeek/);
+  assert.match(html, /usage&&usage\.codexBlock/);
+  assert.match(html, /let codexSub='n\/a'/);
+  assert.match(html, /const codexEffortOptions='<option>minimal<\/option><option>low<\/option><option selected>medium<\/option><option>high<\/option>'/);
+  assert.match(html, /High context/);
+  assert.match(html, /c\.chat&&c\.chat\.cwd===t\.cwd/);
+  assert.match(html, /<h2 class="sec">Active Tasks<\/h2>/);
+  assert.match(html, /stale tasks ·/);
+  assert.match(html, /staleTasksOpen\?'hide':'show'/);
+  assert.match(html, /data-action="task-done"/);
+  assert.match(html, /data-action="task-abandon"/);
+  assert.match(html, /data-action="clear-stale-tasks"/);
+  assert.match(html, /purposeTitle\|\|/);
+  assert.match(html, /document\.title=.*purpose/);
+  assert.match(html, /⚠ Duplicate work detected/);
+  assert.match(html, /Save &amp; kill:/);
+  assert.match(html, /\/api\/sessions\/save-kill/);
+  assert.match(html, /not a duplicate/);
+  assert.match(html, /open both/);
+  assert.match(html, /Needs you:/);
+  assert.match(html, /at this pace:/);
+  assert.match(html, /usage&&usage\.framing/);
+  assert.match(html, /toggle-active-filter/);
+  assert.match(html, /While you were away/);
+  assert.match(html, /tool calls · last 24h/);
+  assert.match(html, /tool calls · last 7d/);
+});
+
+test('/live developer view gates diagnostics without controlling the palette', () => {
+  const html = fs.readFileSync(path.join(process.env.CK_REPO_ROOT, 'src/live.html'), 'utf8');
+  assert.doesNotMatch(html, /:root\.dev,:root\[data-theme="dark"\]/);
+  assert.match(html, /:root\[data-theme="dark"\]/);
+  assert.match(html, /:root:not\(\.dev\) \.dev-only\{display:none/);
+  assert.match(html, /<div class="section-head dev-only"><h2 class="sec">Dispatch<\/h2><\/div>/);
+  assert.match(html, /<section class="dispatch dev-only" id="dispatch">/);
+  assert.match(html, /<h3 class="dev-only" id="watchersSec"/);
+  assert.match(html, /<div class="strip dev-only" id="watchers">/);
+  assert.match(html, /<h3 class="dev-only" id="workersSec"/);
+  assert.match(html, /<div class="strip dev-only" id="workers">/);
+  assert.match(html, /class="row dev-only">❯/);
+  assert.match(html, /class="agents dev-only"/);
+  assert.doesNotMatch(html, /class="ctx dev-only/);
+  assert.match(html, /<div class="ctx \$\{cls\}">/);
+  assert.match(html, /class="act dev-only" id="pView"/);
+  assert.match(html, /<pre class="dev-only" id="transcript"/);
+  assert.match(html, /class="attach dev-only"/);
+  assert.match(html, /<footer class="truth-stats dev-only">/);
+  assert.match(html, /class="act warn" data-action="wrap-save"/);
+  assert.match(html, /class="act danger" data-action="kill-chat"/);
+  assert.match(html, /<span class="badge dev-only">High context<\/span>/);
+  assert.match(html, /function toggleView\(\)\{ if\(panelMode!=='full'&&!document\.documentElement\.classList\.contains\('dev'\)\)return;/);
+  assert.match(html, /<section class="hero">/);
+  assert.doesNotMatch(html, /<section class="hero dev-only">/);
+  assert.match(html, /<div class="needs-grid" id="needsGrid">/);
+  assert.match(html, /<div class="grid" id="grid">/);
+  assert.match(html, /<div class="task-list" id="taskList">/);
+  assert.match(html, /id="devToggle" role="switch" aria-checked="false"/);
+  assert.match(html, /let enabled=false/);
+  assert.match(html, /localStorage\.getItem\('ck-devview'\)==='true'/);
+  assert.match(html, /button\.setAttribute\('aria-checked',String\(enabled\)\)/);
+  assert.match(html, /button\.setAttribute\('aria-checked',String\(on\)\)/);
+  assert.match(html, /localStorage\.setItem\('ck-devview',String\(on\)\)/);
+  assert.match(html, /:root\.dev \.switch\{background:var\(--blue\)\}/);
+});
+
+test('/live defaults to plain-English status, memory, and collapsed usage while preserving developer labels', () => {
+  const html = fs.readFileSync(path.join(process.env.CK_REPO_ROOT, 'src/live.html'), 'utf8');
+  assert.match(html, /<meta name="viewport" content="width=device-width,initial-scale=1">/);
+  assert.match(html, /:root:not\(\.dev\) \.autowrap-control\{display:none\}/);
+  assert.match(html, /:root\.dev \.nondev-only\{display:none\}/);
+  assert.match(html, /<details class="system" id="systemDetails">/);
+  assert.match(html, /class="nondev-only">Usage &amp; system/);
+  assert.match(html, /class="dev-only">System &amp; usage/);
+  for (const label of ['Working', 'Needs you', 'Paused', 'Finished']) assert.match(html, new RegExp(label));
+  assert.match(html, /class="nondev-only">Memory/);
+  assert.match(html, /class="dev-only">Context used/);
+  assert.match(html, /system\.open=enabled/);
+  assert.match(html, /system\.open=on/);
+});
+
+test('/live session cards support keyboard focus and Enter activation', () => {
+  const html = fs.readFileSync(path.join(process.env.CK_REPO_ROOT, 'src/live.html'), 'utf8');
+  assert.match(html, /class="card \$\{[^\n]+tabindex="0"/);
+  assert.match(html, /if\(e\.key!=='Enter'\)return;/);
+  assert.match(html, /const card=e\.target\.closest\('\.card\[data-action\]'\)/);
+  assert.match(html, /ACTIONS\[card\.dataset\.action\]\?\.\(card,e\)/);
+  assert.match(html, /:focus-visible\{outline:2px solid var\(--blue\)/);
+});
+
+test('legacy cockpit keeps task hygiene, weekly usage, needs-you, and active filter controls', () => {
+  const html = fs.readFileSync(path.join(process.env.CK_REPO_ROOT, 'src/index.html'), 'utf8');
+  assert.match(html, /id="activeFilter"/);
+  assert.match(html, /Weekly tokens vs limit/);
+  assert.match(html, /weekProjection/);
+  assert.match(html, /stale tasks ·/);
+  assert.match(html, /data-task-action="completed"/);
+  assert.match(html, /Needs you:/);
+  assert.match(html, /Possible duplicate work:/);
+  assert.match(html, /tool calls · last 24h/);
+});

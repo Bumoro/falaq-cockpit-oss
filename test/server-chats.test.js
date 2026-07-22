@@ -9,6 +9,18 @@ const DIR = path.join(__dirname, '..');
 const PORT = 3898;
 const BASE = `http://localhost:${PORT}`;
 
+// Poll until the freshly spawned server accepts connections. A fixed sleep races under the full
+// suite's concurrency (270 tests) and intermittently ECONNREFUSEs; polling is load-robust.
+async function waitForServer(base, proc, timeoutMs = 8000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (proc && proc.exitCode !== null) throw new Error(`server process exited (code ${proc.exitCode}) before ready at ${base}`);
+    try { if ((await fetch(`${base}/api/token`)).ok) return; } catch (e) { /* not listening yet */ }
+    if (Date.now() > deadline) throw new Error(`server did not start within ${timeoutMs}ms at ${base}`);
+    await new Promise(r => setTimeout(r, 50));
+  }
+}
+
 test('chat routes: token gate, create, screen, keys allowlist, delete', async () => {
   const state = fs.mkdtempSync(path.join(os.tmpdir(), 'cksrv-'));
   const log = path.join(state, 'tmux.log');
@@ -24,7 +36,7 @@ exit 0
     stdio: 'ignore',
   });
   try {
-    await new Promise(r => setTimeout(r, 700));
+    await waitForServer(BASE, srv);
     // no token -> 403
     assert.equal((await fetch(`${BASE}/api/chats`)).status, 403);
     // token endpoint works
@@ -49,6 +61,27 @@ exit 0
     assert.equal((await fetch(`${BASE}/api/chats/${chat.name}/keys`, { method: 'POST', headers: H, body: JSON.stringify({ key: 'q' }) })).status, 400);
     // input
     assert.equal((await fetch(`${BASE}/api/chats/${chat.name}/input`, { method: 'POST', headers: H, body: JSON.stringify({ text: 'follow-up' }) })).status, 200);
+    // uploads are stored beneath the validated chat name and return an absolute local path
+    const uploaded = await fetch(`${BASE}/api/chats/${chat.name}/upload`, { method: 'POST', headers: H, body: JSON.stringify({ filename: 'note image.txt', dataBase64: Buffer.from('hello').toString('base64') }) });
+    assert.equal(uploaded.status, 200);
+    const uploadedBody = await uploaded.json();
+    assert.equal(path.dirname(uploadedBody.path), path.join(state, 'uploads', chat.name));
+    assert.match(path.basename(uploadedBody.path), /^\d+-note_image\.txt$/);
+    assert.equal(fs.readFileSync(uploadedBody.path, 'utf8'), 'hello');
+    // A traversal-looking filename is reduced to its basename and cannot escape the upload jail.
+    const traversal = await fetch(`${BASE}/api/chats/${chat.name}/upload`, { method: 'POST', headers: H, body: JSON.stringify({ filename: '../../x', dataBase64: Buffer.from('safe').toString('base64') }) });
+    assert.equal(traversal.status, 200);
+    const traversalBody = await traversal.json();
+    assert.equal(path.dirname(traversalBody.path), path.join(state, 'uploads', chat.name));
+    assert.match(path.basename(traversalBody.path), /^\d+-x$/);
+    assert.equal(fs.readFileSync(traversalBody.path, 'utf8'), 'safe');
+    const empty = await fetch(`${BASE}/api/chats/${chat.name}/upload`, { method: 'POST', headers: H, body: JSON.stringify({ filename: 'empty.bin', dataBase64: '' }) });
+    assert.equal(empty.status, 400);
+    // The upload body gets a larger JSON allowance than ordinary routes, but decoded files remain capped.
+    const oversizeData = Buffer.alloc(15 * 1024 * 1024 + 1).toString('base64');
+    const oversize = await fetch(`${BASE}/api/chats/${chat.name}/upload`, { method: 'POST', headers: H, body: JSON.stringify({ filename: 'too-big.bin', dataBase64: oversizeData }) });
+    assert.equal(oversize.status, 400);
+    assert.match((await oversize.json()).error, /15 MB/);
     // delete
     assert.equal((await fetch(`${BASE}/api/chats/${chat.name}`, { method: 'DELETE', headers: H })).status, 200);
     assert.deepEqual(await (await fetch(`${BASE}/api/chats`, { headers: H })).json(), []);
@@ -80,7 +113,7 @@ exit 0
     stdio: 'ignore',
   });
   try {
-    await new Promise(r => setTimeout(r, 700));
+    await waitForServer(BASE2, srv);
     const token = await (await fetch(`${BASE2}/api/token`)).text();
     const H = { 'x-cockpit-token': token, 'Content-Type': 'application/json' };
     const created = await fetch(`${BASE2}/api/chats`, { method: 'POST', headers: H, body: JSON.stringify({ title: 'crash test', cwd: os.homedir(), model: 'haiku', effort: 'low' }) });

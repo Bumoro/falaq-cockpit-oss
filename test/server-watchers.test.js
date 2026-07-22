@@ -6,8 +6,8 @@ test('/api/watchers serves stored watcher state', async () => {
   fs.mkdirSync(path.join(state, 'watchers'), { recursive: true });
   fs.writeFileSync(path.join(state, 'watchers', 'ci.json'), JSON.stringify({ name: 'ci', state: 'green', summary: 'ok', lastCheck: Date.now(), lastChange: Date.now() }));
   const t = path.join(state, 'true.sh'); fs.writeFileSync(t, '#!/bin/bash\nexit 0\n'); fs.chmodSync(t, 0o755);
-  // Isolate from any real (production) watcher-config.json — that file may configure a real
-  // "ci" watcher against a repo, and buildChecks() reads it from the repo's
+  // Isolate from the real (production) watcher-config.json — that file configures a real
+  // "ci" watcher against Bumoro/falaq-cockpit, and buildChecks() reads it from the repo's
   // watchers/ dir regardless of COCKPIT_DIR. Point CK_WATCHER_CONFIG at an empty config so
   // runWatchers() finds no checks to run and the seeded ci.json fixture is left untouched —
   // this test is only about the /api/watchers read path and /api/sessions non-blocking, not

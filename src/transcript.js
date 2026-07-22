@@ -241,4 +241,73 @@ function parseTranscriptUncached(real, o) {
   return turns.length > o.maxTurns ? turns.slice(-o.maxTurns) : turns;
 }
 
-module.exports = { readTranscript, parseTranscript, isAllowed };
+// Files actually changed by recently completed mutating tools. Used by duplicate-work detection;
+// reads and failed/unpaired writes are deliberately excluded to avoid noisy false overlap.
+function recentTouchedFiles(file, cwd, opts) {
+  opts = opts || {};
+  const real = resolveInJail(file);
+  if (!real) return [];
+  const now = Number(opts.now || Date.now());
+  const recentMs = Number(opts.recentMs || 60 * 60 * 1000);
+  const readCap = Number(opts.readCap || 4 * 1024 * 1024);
+  let raw;
+  try { raw = readBounded(real, readCap).raw; } catch (e) { return []; }
+  const lines = raw.split('\n'), results = new Map();
+  for (const line of lines) {
+    let event; try { event = JSON.parse(line); } catch (e) { continue; }
+    const content = event && event.message && event.message.content;
+    if (!Array.isArray(content)) continue;
+    for (const block of content) if (block && block.type === 'tool_result' && block.tool_use_id) results.set(block.tool_use_id, !block.is_error);
+  }
+  const mutating = new Set(['edit', 'write', 'multiedit', 'notebookedit']);
+  const touched = [];
+  for (const line of lines) {
+    let event; try { event = JSON.parse(line); } catch (e) { continue; }
+    if (event && (event.isSidechain === true || event.isMeta === true)) continue;
+    const at = Date.parse(event && event.timestamp);
+    if (!Number.isFinite(at) || now - at > recentMs || at > now + 60000) continue;
+    const content = event && event.message && event.message.content;
+    if (!Array.isArray(content)) continue;
+    for (const block of content) {
+      if (!block || block.type !== 'tool_use' || !results.get(block.id) || !mutating.has(String(block.name || '').toLowerCase())) continue;
+      const input = block.input || {}, value = input.file_path || input.path;
+      if (typeof value !== 'string' || !value.trim()) continue;
+      const normalized = path.normalize(path.isAbsolute(value) ? value : path.resolve(cwd || '.', value));
+      const prior = touched.indexOf(normalized);
+      if (prior >= 0) touched.splice(prior, 1);
+      touched.push(normalized);
+    }
+  }
+  return touched.slice(-20);
+}
+
+function completedActions(file, opts) {
+  opts = opts || {};
+  const real = resolveInJail(file);
+  if (!real) return [];
+  const readCap = opts.readCap || 4 * 1024 * 1024;
+  return memoized('completedActions', real, readCap, [], () => {
+    let raw;
+    try { raw = readBounded(real, readCap).raw; } catch (e) { return []; }
+    const lines = raw.split('\n'), success = new Set();
+    for (const line of lines) {
+      let event; try { event = JSON.parse(line); } catch (e) { continue; }
+      const content = event && event.message && event.message.content;
+      if (!Array.isArray(content)) continue;
+      for (const block of content) if (block && block.type === 'tool_result' && block.tool_use_id && !block.is_error) success.add(block.tool_use_id);
+    }
+    const actions = [];
+    for (const line of lines) {
+      let event; try { event = JSON.parse(line); } catch (e) { continue; }
+      if (event && (event.isSidechain === true || event.isMeta === true)) continue;
+      const content = event && event.message && event.message.content;
+      if (!Array.isArray(content)) continue;
+      for (const block of content) if (block && block.type === 'tool_use' && success.has(block.id)) {
+        actions.push({ name: String(block.name || 'tool').slice(0, 60), label: toolLabel(block.input, 120), ts: event.timestamp || '' });
+      }
+    }
+    return actions.slice(-3);
+  });
+}
+
+module.exports = { readTranscript, parseTranscript, recentTouchedFiles, completedActions, isAllowed };

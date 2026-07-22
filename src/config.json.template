@@ -3,5 +3,14 @@
     "my-repo-dir-name": "Display Name",
     "example-client": "Example Client"
   },
-  "autoWrap": { "enabled": false, "thresholdPct": 0.85, "autoRestart": false }
+  "autoWrap": { "enabled": false, "thresholdPct": 0.50, "autoRestart": false },
+  "usage": { "weeklyTokenCap": null },
+  "dispatch": {
+    "enabled": false,
+    "concurrency": 1,
+    "dryRun": false,
+    "caps": { "stopStartingAfter": "05:00", "eveningResumeAfter": "18:00", "nightlyTokenCeiling": null },
+    "slackChannelId": "",
+    "slackTriggerUserIds": []
+  }
 }

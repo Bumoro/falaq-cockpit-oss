@@ -56,7 +56,7 @@ exit 0
     assert.equal(chats[0].profile, 'nondev');
 
     const defaults = JSON.parse(fs.readFileSync(path.join(state, 'new-chat-defaults.json'), 'utf8'));
-    assert.deepEqual(defaults, { model: 'sonnet', effort: 'medium', ultracode: false });
+    assert.deepEqual(defaults, { provider: 'claude', model: 'sonnet', effort: 'medium', ultracode: false });
     assert.ok(!Object.hasOwn(defaults, 'profile'), 'profile is per-call, not a new-chat default');
   } finally {
     srv.kill();

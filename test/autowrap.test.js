@@ -33,6 +33,19 @@ afterEach(() => {
   while (dirs.length) fs.rmSync(dirs.pop(), { recursive: true, force: true });
 });
 
+// A live box may run on the DEFAULT threshold (enabled + autoRestart, no explicit thresholdPct), so
+// prove the 0.50 default both APPLIES and FIRES through tick() — not just at the readConfig level.
+test('production default (threshold omitted) wraps an idle session once it crosses 50% context', () => {
+  const { calls, deps } = setup({ autoWrap: { enabled: true, autoRestart: true } });
+  autowrap.tick([session({ context: { pct: 0.60 } })], deps, 1000);
+  assert.deepEqual(calls.sent, [{ name: 'ck-work', text: autowrap.WRAP_MSG }]);
+});
+test('production default does NOT wrap a session still under 50% context', () => {
+  const { calls, deps } = setup({ autoWrap: { enabled: true, autoRestart: true } });
+  autowrap.tick([session({ context: { pct: 0.45 } })], deps, 1000);
+  assert.deepEqual(calls.sent, []);
+});
+
 test('wraps a controlled high-context idle session exactly once with the canonical message', () => {
   const { calls, deps } = setup(ON);
   autowrap.tick([session()], deps, 1234);
@@ -59,6 +72,17 @@ test('never injects unless every wrap gate passes, especially idle state', () =>
   const dflt = setup();
   autowrap.tick([session()], dflt.deps, 1);
   assert.equal(dflt.calls.sent.length, 0, 'default (no config) is disabled');
+});
+
+test('Codex at high context is passive only and never wraps or relaunches', () => {
+  const { calls, deps } = setup({ autoWrap: { enabled: true, thresholdPct: 0.50, autoRestart: true } });
+  const codex = session({ provider: 'codex', context: { pct: 0.99 } });
+  autowrap.tick([codex], deps, 1);
+  deps.readTranscript = () => '<RESUME>should never launch</RESUME>';
+  autowrap.tick([codex], deps, 2);
+  assert.deepEqual(calls.sent, []);
+  assert.deepEqual(calls.created, []);
+  assert.equal(fs.existsSync(autowrap._stateFile()), false);
 });
 
 test('send failures are fail-soft and are not recorded as wrapped', () => {
@@ -111,9 +135,9 @@ test('autoRestart does NOT restart when Claude emits no real resume block (only 
 
 test('readConfig supplies defaults (disabled) and rejects invalid thresholds', () => {
   setup();
-  assert.deepEqual(autowrap.readConfig(), { enabled: false, thresholdPct: 0.85, autoRestart: false });
+  assert.deepEqual(autowrap.readConfig(), { enabled: false, thresholdPct: 0.50, autoRestart: false });
   fs.writeFileSync(path.join(process.env.COCKPIT_DIR, 'config.json'), JSON.stringify({ autoWrap: { enabled: true, thresholdPct: 4, autoRestart: true } }));
-  assert.deepEqual(autowrap.readConfig(), { enabled: true, thresholdPct: 0.85, autoRestart: true });
+  assert.deepEqual(autowrap.readConfig(), { enabled: true, thresholdPct: 0.50, autoRestart: true });
 });
 
 test('persistent state round-trips and vanished sessions are pruned', () => {

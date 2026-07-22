@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Falaq Mobile</title>
+<style>
+:root{color-scheme:light dark;
+  --bg:#F5F5F7;--surface:#FFFFFF;--surface-2:#FBFBFD;
+  --ink:#1D1D1F;--ink-2:#6E6E73;--ink-3:#6E6E73;
+  --line:#D2D2D7;--line-2:#E8E8ED;
+  --blue:#0071E3;--link:#0066CC;--green:#0E8043;--amber:#8A5A00;--red:#CE2E24;--gray:#5F5F64;
+  --green-bg:#E8F6EE;--amber-bg:#FBF1DD;--red-bg:#FFF0ED;--gray-bg:#EFEFF1;--blue-bg:#E9F1FD;
+  --radius:18px;--radius-sm:12px;--shadow:0 4px 24px -10px rgba(0,0,0,.10),0 1px 2px rgba(0,0,0,.04);
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#000000;--surface:#1C1C1E;--surface-2:#161617;
+  --ink:#F5F5F7;--ink-2:#A1A1A6;--ink-3:#8A8A8E;
+  --line:#38383C;--line-2:#2A2A2C;
+  --blue:#0A70E0;--link:#2997FF;--green:#30D158;--amber:#FFB340;--red:#FF453A;--gray:#8A8A8E;
+  --green-bg:#12301B;--amber-bg:#332609;--red-bg:#381512;--gray-bg:#1F1F22;--blue-bg:#0A2646;
+  --shadow:0 8px 30px -12px rgba(0,0,0,.6)}}
+*{box-sizing:border-box}html{background:var(--bg);overflow-x:hidden}body{margin:0;min-width:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--sans);letter-spacing:-.01em;-webkit-font-smoothing:antialiased;overflow-x:hidden}button{font:inherit;letter-spacing:inherit;cursor:pointer}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.shell{width:100%;max-width:680px;margin:auto;padding:0 16px calc(34px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:10;height:56px;margin:0 -16px;padding:env(safe-area-inset-top) 16px 0;display:flex;align-items:center;gap:10px;background:color-mix(in srgb,var(--bg) 76%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line-2)}header h1{font-size:17px;font-weight:600;letter-spacing:-.02em;margin:0}header .sub{color:var(--ink-2);font-weight:400}header .stamp{margin-left:auto;color:var(--ink-3);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.offline{display:none;margin:12px 0 0;padding:11px 13px;border-radius:var(--radius-sm);background:var(--amber-bg);color:var(--amber);font-size:13px;font-weight:600}.offline.on{display:block}
+.needs{display:none;margin:12px 0 0;padding:14px;border:1px solid color-mix(in srgb,var(--amber) 36%,var(--line));border-radius:var(--radius-sm);background:var(--amber-bg);color:var(--amber)}.needs.show{display:block}.needs-title{font-size:15px;font-weight:700}.needs-copy{font-size:13px;margin-top:3px;overflow-wrap:anywhere}
+.duplicate{display:none;margin:12px 0 0;padding:14px;border-radius:var(--radius-sm);background:var(--red);color:#fff;box-shadow:0 7px 24px color-mix(in srgb,var(--red) 38%,transparent)}.duplicate.show{display:block}.duplicate h2{font-size:16px;margin:0 0 5px}.duplicate .pair{font-weight:600;overflow-wrap:anywhere}.duplicate .qualifier{opacity:.82;font-weight:500}.duplicate-actions{display:grid;gap:8px;margin-top:12px}.duplicate button{min-height:44px;border:1px solid rgba(255,255,255,.78);border-radius:12px;background:#fff;color:#9D211A;padding:9px 11px;font-weight:700;text-align:left;overflow-wrap:anywhere}.duplicate button.dismiss{text-align:center;background:transparent;color:#fff}.duplicate button:disabled{opacity:.58;cursor:wait}.notice{margin-top:11px;padding-top:10px;border-top:1px solid rgba(255,255,255,.42);font-weight:700}.notice small{display:block;font-weight:500;overflow-wrap:anywhere}
+.usage{margin:18px 0 0;padding:16px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--radius);box-shadow:var(--shadow)}.eyebrow{color:var(--ink-3);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}.usage-row{display:flex;align-items:flex-end;gap:12px;margin-top:4px}.usage-big{font-size:25px;line-height:1.15;font-weight:650;letter-spacing:-.03em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.usage-sub{margin-left:auto;color:var(--ink-2);font-size:13px;text-align:right;overflow-wrap:anywhere}.meter,.ctx-bar{height:6px;margin-top:12px;background:var(--gray-bg);border-radius:99px;overflow:hidden}.meter i,.ctx-bar i{display:block;height:100%;border-radius:99px;background:var(--blue)}
+.section-head{display:flex;align-items:baseline;gap:8px;margin:28px 2px 12px}.section-head h2{font-size:20px;letter-spacing:-.025em;margin:0}.count{color:var(--ink-3);font-size:13px;font-variant-numeric:tabular-nums}.cards{display:grid;gap:10px}.card{display:block;min-width:0;padding:15px;background:var(--surface);border:1px solid var(--line-2);border-left:4px solid var(--accent,var(--line));border-radius:var(--radius);box-shadow:var(--shadow);color:inherit;text-decoration:none}.card.needs-you{border-color:color-mix(in srgb,var(--amber) 44%,var(--line-2));border-left-color:var(--accent)}.card.ended,.card.dead{opacity:.64}.card-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.purpose{min-width:0;flex:1 1 160px;font-size:16px;font-weight:650;letter-spacing:-.02em;overflow-wrap:anywhere}.badge,.state{display:inline-flex;align-items:center;min-height:25px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}.badge{color:var(--link);background:var(--blue-bg);text-transform:lowercase}.state{gap:5px;color:var(--gray);background:var(--gray-bg)}.state:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}.state.running{color:var(--green);background:var(--green-bg)}.state.needs_you{color:var(--amber);background:var(--amber-bg)}.state.ended,.state.dead{color:var(--link);background:var(--blue-bg)}.session-meta{display:flex;align-items:center;gap:8px;margin-top:10px;color:var(--ink-3);font-size:13px}.open-chat{margin-left:auto;color:var(--link);font-weight:600}.needs-message{margin-top:10px;color:var(--amber);font-size:14px;overflow-wrap:anywhere}.ctx{margin-top:12px}.ctx-label{display:flex;justify-content:space-between;gap:10px;color:var(--ink-3);font-size:12px;font-variant-numeric:tabular-nums}.ctx.amber .ctx-label{color:var(--amber)}.ctx.amber i{background:var(--amber)}.ctx.red .ctx-label{color:var(--red);font-weight:600}.ctx.red i{background:var(--red)}.empty{padding:28px 14px;text-align:center;color:var(--ink-3);background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--radius-sm)}
+.tasks{margin-top:28px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.tasks summary{min-height:54px;padding:0 15px;display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;font-size:16px;font-weight:650}.tasks summary::-webkit-details-marker{display:none}.tasks summary:after{content:"›";margin-left:auto;color:var(--ink-3);font-size:22px;transform:rotate(90deg);transition:transform .15s}.tasks[open] summary:after{transform:rotate(-90deg)}.task-list{padding:0 12px 12px;display:grid;gap:8px}.task{padding:12px;border:1px solid var(--line-2);border-radius:var(--radius-sm);background:var(--surface-2)}.task.stale{opacity:.7}.task-title{font-weight:600;overflow-wrap:anywhere}.task-meta{margin-top:3px;color:var(--ink-3);font-size:12px}.task-actions{display:flex;gap:8px;margin-top:9px}.task-actions button{min-height:44px;flex:1;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--link);font-weight:600}.task-actions .abandon{color:var(--red)}
+@media (min-width:560px){.duplicate-actions{grid-template-columns:1fr 1fr}.duplicate button.dismiss{grid-column:1/-1}.cards{grid-template-columns:1fr 1fr}.tasks{margin-bottom:20px}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header><h1>Falaq <span class="sub">mobile</span></h1><span class="stamp" id="stamp">Connecting…</span></header>
+  <div class="offline" id="offline" role="status">Offline — showing the last successful update.</div>
+  <section class="needs" id="needs" aria-live="polite"></section>
+  <section class="duplicate" id="duplicate" aria-live="assertive"></section>
+  <section class="usage" id="usage"><div class="eyebrow">This week</div><div class="usage-row"><div class="usage-big">—</div><div class="usage-sub">Loading usage…</div></div></section>
+  <div class="section-head"><h2>Sessions</h2><span class="count" id="sessionCount">0 sessions</span></div>
+  <main class="cards" id="sessions"><div class="empty">Loading sessions…</div></main>
+  <details class="tasks" id="tasks"><summary>Active tasks <span class="count" id="taskCount">0</span></summary><div class="task-list" id="taskList"><div class="empty">Loading tasks…</div></div></details>
+</div>
+<script>
+const STALE_MS=10*60*1000, AMBER=.35, WARN=.5;
+let TOKEN='', failCount=0, loading=false, duplicateCache=[], duplicateSessions=[], duplicateBusy=false, duplicateNotice=null, chatsCacheLast=[];
+const CARD_COLORS=['#168C89','#8567D3','#9A7410','#BB4B77','#287FA3','#6F8617','#C05243','#5968C5'];
+function H(){return {'x-cockpit-token':TOKEN,'Content-Type':'application/json'};}
+function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function fmtTok(n){n=Number(n)||0;if(n>=1e9)return(n/1e9).toFixed(1)+'B';if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(0)+'k';return String(n);}
+function ago(ts){const elapsed=Math.max(0,Date.now()-Number(ts||Date.now()));if(elapsed<60000)return Math.round(elapsed/1000)+'s ago';if(elapsed<=3600000)return Math.round(elapsed/60000)+'m ago';if(elapsed<=48*3600000)return Math.round(elapsed/3600000)+'h ago';if(elapsed<=14*86400000)return Math.round(elapsed/86400000)+'d ago';return Math.round(elapsed/(7*86400000))+'w ago';}
+function cardColor(id){let hash=2166136261;for(const char of String(id||'')){hash^=char.codePointAt(0);hash=Math.imul(hash,16777619);}return CARD_COLORS[(hash>>>0)%CARD_COLORS.length];}
+function displayState(s){if(!s.state)return'idle';if(s.state==='running'&&Date.now()-s.lastActivityAt>STALE_MS&&!(s.liveAgents&&s.liveAgents.length))return'stale';return s.state;}
+function stateLabel(state){return String(state||'unknown').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+function ctxHtml(c){if(!c)return'';const raw=Number(c.pct)||0,pct=Math.max(0,Math.min(100,Math.round(raw*100))),cls=raw>=WARN?'red':raw>=AMBER?'amber':'';return `<div class="ctx ${esc(cls)}"><div class="ctx-label"><span>Context used</span><span>${esc(pct)}% · ${esc(fmtTok(c.tokens))}/${esc(fmtTok(c.limit))}</span></div><div class="ctx-bar"><i style="width:${esc(pct)}%"></i></div></div>`;}
+function setOffline(on){document.getElementById('offline').classList.toggle('on',on);}
+async function json(path,options){const r=await fetch(path,options);if(!r.ok)throw new Error(String(r.status));return r.json();}
+
+function buildCards(sessions,chats){
+  const claimed=new Set(),cards=[];
+  for(const c of chats){
+    const named=sessions.filter(s=>s.chatName&&s.chatName===c.name&&!claimed.has(s.sessionId)).sort((a,b)=>((a.state==='ended')-(b.state==='ended'))||((b.lastActivityAt||0)-(a.lastActivityAt||0)));
+    const codexMatch=c.provider==='codex'&&sessions.find(s=>!s.chatName&&s.provider==='codex'&&s.cwd===c.cwd&&!claimed.has(s.sessionId));
+    const legacyMatch=sessions.find(s=>!s.chatName&&s.cwd===c.cwd&&Math.abs((s.startedAt||0)-c.createdAt)<180000&&!claimed.has(s.sessionId));
+    const m=named[0]||codexMatch||legacyMatch;if(m)claimed.add(m.sessionId);const s=m||{};
+    cards.push({controlled:true,chat:c,sessionId:s.sessionId,provider:s.provider||c.provider||'claude',purposeTitle:s.purposeTitle,client:c.title,state:c.alive?(s.state||'running'):'dead',needsYou:s.needsYou,lastActivityAt:s.lastActivityAt||c.createdAt,context:s.context,liveAgents:s.liveAgents});
+  }
+  for(const s of sessions){if(claimed.has(s.sessionId))continue;if(s.chatName&&chats.some(c=>c.name===s.chatName))continue;cards.push({controlled:false,...s});}
+  const order={needs_you:0,stale:1,running:2,idle:3,dead:4,ended:5};
+  cards.forEach(x=>x._d=x.controlled&&x.state==='dead'?'dead':displayState(x));
+  cards.sort((a,b)=>((order[a._d]??3)-(order[b._d]??3))||((b.context?b.context.pct:0)-(a.context?a.context.pct:0))||((b.lastActivityAt||0)-(a.lastActivityAt||0)));
+  return cards;
+}
+function cardHtml(x){
+  const purpose=x.purposeTitle||(x.chat&&x.chat.title)||x.client||'Unknown session',provider=x.provider||'claude',color=cardColor(x.chatName||(x.chat&&x.chat.name)||x.sessionId||''),tag=x.controlled?'a':'article',href=x.controlled?` href="/chat?name=${esc(encodeURIComponent(x.chat.name))}"`:'';
+  return `<${tag} class="card ${esc(x._d==='needs_you'?'needs-you':x._d)}" style="--accent:${esc(color)}"${href}><div class="card-top"><span class="purpose">${esc(purpose)}</span><span class="badge">${esc(provider)}</span><span class="state ${esc(x._d)}">${esc(stateLabel(x._d))}</span></div>${x.needsYou&&x._d==='needs_you'?`<div class="needs-message">${esc(x.needsYou.message)}</div>`:''}<div class="session-meta"><span>${esc(ago(x.lastActivityAt))}</span>${x.controlled?'<span class="open-chat">Open chat ›</span>':''}</div>${ctxHtml(x.context)}</${tag}>`;
+}
+function renderSessions(sessions,chats){const cards=buildCards(sessions,chats);document.getElementById('sessionCount').textContent=`${cards.length} session${cards.length===1?'':'s'}`;document.getElementById('sessions').innerHTML=cards.length?cards.map(cardHtml).join(''):'<div class="empty">No live sessions.</div>';}
+function renderNeeds(sessions,tasks){const waiting=(sessions||[]).filter(s=>s.state==='needs_you'),ids=new Set(waiting.map(s=>s.sessionId)),gates=(tasks||[]).filter(t=>['live','stale'].includes(t.displayState)&&!ids.has(t.sessionId)&&/^\s*🔒\s*GATE\s*:/i.test(t.task||'')),labels=[...waiting.map(s=>s.purposeTitle||s.client||'waiting session'),...gates.map(t=>t.task)],el=document.getElementById('needs');if(!labels.length){el.classList.remove('show');el.innerHTML='';return;}el.innerHTML=`<div class="needs-title">Needs you · ${esc(labels.length)}</div><div class="needs-copy">${labels.map(esc).join(' · ')}</div>`;el.classList.add('show');}
+
+function duplicateDisambiguator(side){const session=duplicateSessions.find(item=>item.sessionId===side.sessionId)||side,cwd=String(session.cwd||'').replace(/[\\/]+$/,'');const primary=cwd?cwd.split(/[\\/]/).pop():(session.startedAt||session.lastActivityAt?ago(session.startedAt||session.lastActivityAt):'session');return `${primary} · ${String(side.sessionId||'unknown').slice(-12)}`;}
+function renderDuplicates(data,sessions){if(Array.isArray(sessions))duplicateSessions=sessions;duplicateCache=data&&Array.isArray(data.pairs)?data.pairs:[];const el=document.getElementById('duplicate'),pair=duplicateCache[0];if(!pair){el.classList.remove('show');el.innerHTML='';return;}const sameColor=cardColor(pair.a.chatName||pair.a.sessionId||'')===cardColor(pair.b.chatName||pair.b.sessionId||''),qualifier=pair.status==='unconfirmed'?' <span class="qualifier">(unconfirmed)</span>':'',notice=duplicateNotice&&duplicateNotice.pairKey===pair.pairKey?`<div class="notice">${esc(duplicateNotice.message)}${duplicateNotice.savedPath?`<small>${esc(duplicateNotice.savedPath)}</small>`:''}</div>`:'',button=side=>`<button data-action="save-kill" data-session-id="${esc(side.sessionId)}" data-title="${esc(side.purposeTitle||'this session')}" ${duplicateBusy?'disabled':''}>Save &amp; kill · ${esc(side.purposeTitle||'Untitled')}${sameColor?' · '+esc(duplicateDisambiguator(side)):''}</button>`;el.innerHTML=`<h2>⚠ Duplicate work detected</h2><div class="pair">${esc(pair.a.purposeTitle||'Untitled')} ↔ ${esc(pair.b.purposeTitle||'Untitled')}${qualifier}</div><div class="duplicate-actions">${button(pair.a)}${button(pair.b)}<button class="dismiss" data-action="dismiss-duplicate" ${duplicateBusy?'disabled':''}>Not a duplicate</button></div>${notice}`;el.classList.add('show');}
+async function dismissDuplicate(){const pair=duplicateCache[0];if(!pair||duplicateBusy||!confirm('Dismiss this duplicate warning as not a duplicate?'))return;duplicateBusy=true;renderDuplicates({pairs:duplicateCache});try{const r=await fetch('/api/duplicates/dismiss',{method:'POST',headers:H(),body:JSON.stringify({pairKey:pair.pairKey})});if(!r.ok)throw new Error();duplicateCache.shift();duplicateNotice=null;}catch(e){duplicateNotice={pairKey:pair.pairKey,message:'Could not dismiss the warning. Check the connection and try again.'};}finally{duplicateBusy=false;renderDuplicates({pairs:duplicateCache});}}
+async function saveKillDuplicate(el){const pair=duplicateCache[0],sessionId=el.dataset.sessionId,title=el.dataset.title||'this session';if(!pair||duplicateBusy||![pair.a.sessionId,pair.b.sessionId].includes(sessionId)||!confirm(`Save ${title}'s session log, then kill only that session?`))return;duplicateBusy=true;duplicateNotice={pairKey:pair.pairKey,message:`Saving ${title} before kill…`};renderDuplicates({pairs:duplicateCache});try{const response=await fetch('/api/sessions/save-kill',{method:'POST',headers:H(),body:JSON.stringify({sessionId})});let result={};try{result=await response.json();}catch(e){}if(response.ok)duplicateNotice={pairKey:pair.pairKey,message:result.alreadyEnded?`Saved log; ${title} had already ended.`:`Saved log + killed ${title}.`,savedPath:result.savedPath||''};else duplicateNotice={pairKey:pair.pairKey,message:result.reason||`Could not save and kill ${title}.`,savedPath:result.savedPath||''};}catch(e){duplicateNotice={pairKey:pair.pairKey,message:`Could not reach the cockpit server; ${title} was not killed.`};}finally{duplicateBusy=false;renderDuplicates({pairs:duplicateCache});tick();}}
+
+function renderUsage(usage){const w=usage&&usage.week,wt=(usage&&usage.weekTile)||{mode:'volume'},projection=usage&&usage.weekProjection;let big='—',sub='Usage unavailable',pct=null;if(projection&&projection.cap){big=`${fmtTok(projection.tokens)} / ${fmtTok(projection.cap)}`;sub=`${projection.pct}% · ${projection.exhaustionDay==='limit reached'?'limit reached':projection.exhaustionDay?'at this pace: '+projection.exhaustionDay:'at this pace: within weekly limit'}`;pct=projection.pct;}else if(wt.mode==='real'){big=`${wt.pct}%`;sub=`weekly limit${wt.stale?' · stale':''}`;pct=wt.pct;}else if(wt.mode==='est'){big=`~${wt.pct}%`;sub='estimated · configured cap';pct=wt.pct;}else if(w){big=fmtTok(w.totalTokens);sub='tokens · weekly limit unavailable';}pct=pct==null?null:Math.max(0,Math.min(100,Number(pct)||0));document.getElementById('usage').innerHTML=`<div class="eyebrow">This week</div><div class="usage-row"><div class="usage-big">${esc(big)}</div><div class="usage-sub">${esc(sub)}</div></div>${pct==null?'':`<div class="meter"><i style="width:${esc(pct)}%"></i></div>`}`;}
+function taskHtml(task){return `<div class="task ${task.displayState==='stale'?'stale':''}"><div class="task-title">${esc(task.task||'Untitled task')}</div><div class="task-meta">${esc(task.agent||'session task')} · ${esc(task.relativeTime||'')} · ${esc(task.displayState||'live')}</div><div class="task-actions"><button data-action="task-update" data-task-key="${esc(task.key)}" data-status="completed">Done</button><button class="abandon" data-action="task-update" data-task-key="${esc(task.key)}" data-status="abandoned">Abandon</button></div></div>`;}
+function renderTasks(tasks){const active=(Array.isArray(tasks)?tasks:[]).filter(t=>['live','stale'].includes(t.displayState));document.getElementById('taskCount').textContent=String(active.length);document.getElementById('taskList').innerHTML=active.length?active.map(taskHtml).join(''):'<div class="empty">No active tasks.</div>';}
+async function updateTask(el){const key=el.dataset.taskKey,status=el.dataset.status;if(!key||!['completed','abandoned'].includes(status)||!confirm(`${status==='completed'?'Mark this task done':'Abandon this task'}?`))return;el.disabled=true;try{const r=await fetch('/api/tasks/actions',{method:'POST',headers:H(),body:JSON.stringify({taskKeys:[key],status})});if(!r.ok)throw new Error();tick();}catch(e){alert('Could not update the task. Check the connection and try again.');}finally{el.disabled=false;}}
+
+async function tick(){if(loading||document.hidden)return;loading=true;try{if(!TOKEN){const r=await fetch('/api/token');if(!r.ok)throw new Error(String(r.status));TOKEN=await r.text();}
+  // Sessions are the page's backbone — a failure there is a real outage. Secondary feeds fall
+  // back per-endpoint (like live.html) so one flaky API degrades a section, not the whole page.
+  const sessions=await json('/api/sessions');
+  const [chats,usage,eventData,duplicates]=await Promise.all([
+    json('/api/chats',{headers:H()}).catch(e=>{if(String(e.message)==='403')TOKEN='';return chatsCacheLast;}),
+    json('/api/usage').catch(()=>null),
+    json('/api/events').catch(()=>null),
+    json('/api/duplicates').catch(()=>({pairs:duplicateCache})),
+  ]);
+  chatsCacheLast=chats||[];failCount=0;setOffline(false);renderNeeds(sessions,eventData&&eventData.tasks);renderDuplicates(duplicates,sessions);if(usage)renderUsage(usage);renderSessions(sessions,chats||[]);if(eventData)renderTasks(eventData.tasks);document.getElementById('stamp').textContent='Updated just now';}catch(e){failCount++;if(failCount>=2)setOffline(true);document.getElementById('stamp').textContent='Reconnecting…';}finally{loading=false;}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
+document.addEventListener('click',e=>{const el=e.target.closest('[data-action]');if(!el)return;if(el.dataset.action==='dismiss-duplicate')dismissDuplicate();else if(el.dataset.action==='save-kill')saveKillDuplicate(el);else if(el.dataset.action==='task-update')updateTask(el);});
+fetch('/api/token').then(r=>{if(!r.ok)throw new Error();return r.text();}).then(t=>{TOKEN=t;}).catch(()=>{}).finally(tick);
+setInterval(tick,3000);
+</script>
+</body>
+</html>

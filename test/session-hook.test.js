@@ -20,12 +20,12 @@ function run(payload, dir) {
 test('SessionStart creates session file with client mapping', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ck-'));
   fs.writeFileSync(path.join(dir, 'config.json'), JSON.stringify({
-    clientMap: { 'my-app': 'My App', 'my-api': 'My API' }
+    clientMap: { 'client-os': 'Client-OS', 'falaq-pixel': 'Falaq Pixel' }
   }));
   const s = run({ session_id: 'aaa', hook_event_name: 'SessionStart',
-    cwd: '/Users/dev/my-app', model: 'claude-fable-5', transcript_path: '/tmp/x/t.jsonl' }, dir);
+    cwd: '/Users/omaralsumait/dev/client-os', model: 'claude-fable-5', transcript_path: '/tmp/x/t.jsonl' }, dir);
   assert.equal(s.state, 'running');
-  assert.equal(s.client, 'My App');
+  assert.equal(s.client, 'Client-OS');
   assert.equal(s.model, 'claude-fable-5');
   assert.ok(s.startedAt > 0);
   assert.equal(s.transcriptPath, '/tmp/x/t.jsonl');

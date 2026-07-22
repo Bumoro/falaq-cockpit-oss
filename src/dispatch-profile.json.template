@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "defaultMode": "default",
+    "deny": [
+      "Bash(git push:*)", "Bash(git remote:*)", "Bash(git config:*)", "Bash(git reset:*)", "Bash(git rebase:*)",
+      "Bash(gh pr merge:*)", "Bash(gh api:*)", "Bash(gh release:*)", "Bash(gh workflow:*)", "Bash(gh secret:*)", "Bash(gh auth:*)", "Bash(gh repo:*)",
+      "Bash(vercel:*)", "Bash(netlify:*)", "Bash(kubectl:*)", "Bash(docker:*)", "Bash(fly:*)", "Bash(heroku:*)", "Bash(aws:*)", "Bash(gcloud:*)", "Bash(terraform:*)",
+      "Bash(sudo:*)", "Bash(su:*)", "Bash(chmod:*)", "Bash(chown:*)", "Bash(launchctl:*)", "Bash(crontab:*)", "Bash(git worktree:*)",
+      "Bash(curl:*)", "Bash(wget:*)", "Bash(nc:*)", "Bash(ncat:*)", "Bash(ssh:*)", "Bash(scp:*)", "Bash(sftp:*)", "Bash(rsync:*)", "Bash(telnet:*)",
+      "Bash(npm publish:*)", "Bash(pnpm publish:*)", "Bash(yarn publish:*)", "Bash(git diff:*)",
+      "Read(**/.ssh/**)", "Read(**/id_rsa*)", "Read(**/id_ed25519*)", "Read(**/.aws/**)", "Read(**/.config/gh/**)", "Read(**/.env)", "Read(**/.env.local)", "Read(**/.env.*.local)", "Read(**/credentials*)",
+      "Write(**/.claude/**)", "Write(//__HOME__/.ssh/**)", "Write(//__HOME__/.claude/**)", "Write(//__COCKPIT__/**)", "Write(//__MIRROR__/**)",
+      "Edit(**/.claude/**)", "Edit(//__COCKPIT__/**)", "Edit(//__MIRROR__/**)"
+    ],
+    "allow": [
+      "Edit(//__WORKTREE__/**)", "Write(//__WORKTREE__/**)", "NotebookEdit(//__WORKTREE__/**)",
+      "Bash(git add:*)", "Bash(git commit:*)", "Bash(git status:*)", "Bash(git switch:*)", "Bash(git checkout:*)", "Bash(git branch:*)", "Bash(git restore:*)", "Bash(git stash:*)", "Bash(git log:*)", "Bash(git show:*)", "Bash(git fetch:*)", "Bash(git merge:*)", "Bash(git rm:*)", "Bash(git mv:*)", "Bash(git clean:*)",
+      "Bash(gh pr create:*)", "Bash(gh pr view:*)", "Bash(gh pr diff:*)", "Bash(gh pr checks:*)",
+      "Bash(npm:*)", "Bash(pnpm:*)", "Bash(yarn:*)", "Bash(npx:*)", "Bash(node:*)", "Bash(bun:*)", "Bash(deno:*)",
+      "Bash(python3:*)", "Bash(pip:*)", "Bash(pip3:*)", "Bash(pytest:*)", "Bash(ruff:*)", "Bash(cargo:*)", "Bash(go:*)", "Bash(make:*)", "Bash(rake:*)", "Bash(bundle:*)",
+      "Bash(mkdir:*)", "Bash(touch:*)", "Bash(cp:*)", "Bash(mv:*)", "Bash(rm:*)", "Bash(sed:*)", "Bash(tee:*)", "Bash(./run-tests.sh:*)"
+    ]
+  }
+}

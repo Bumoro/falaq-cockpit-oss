@@ -143,3 +143,33 @@ test('memo caches by stat identity, invalidates on touch, and evicts least-recen
   for (let i = 1; i <= 32; i++) transcript.parseTranscript(path.join(dir, `memo-${i}.jsonl`));
   assert.notStrictEqual(transcript.parseTranscript(first), touched);
 });
+
+test('recentTouchedFiles returns only recent completed mutating tool paths', () => {
+  const dir = tmpProjects();
+  const now = Date.parse('2026-07-11T10:30:00.000Z');
+  const p = writeJsonl(dir, 'touches.jsonl', [
+    asstBlocks([{ type: 'tool_use', id: 'edit', name: 'Edit', input: { file_path: 'src/api.js' } }]),
+    toolResultLine('edit', false),
+    asstBlocks([{ type: 'tool_use', id: 'read', name: 'Read', input: { file_path: 'src/other.js' } }]),
+    toolResultLine('read', false),
+    asstBlocks([{ type: 'tool_use', id: 'failed', name: 'Write', input: { file_path: 'src/bad.js' } }]),
+    toolResultLine('failed', true),
+  ]);
+  assert.deepEqual(transcript.recentTouchedFiles(p, dir, { now, recentMs: 60 * 60 * 1000 }), [path.join(dir, 'src/api.js')]);
+});
+
+test('completedActions returns the last three actually completed tools', () => {
+  const dir = tmpProjects();
+  const p = writeJsonl(dir, 'actions.jsonl', [
+    asstBlocks([{ type: 'tool_use', id: 'a', name: 'Read', input: { file_path: 'a.js' } }]), toolResultLine('a', false),
+    asstBlocks([{ type: 'tool_use', id: 'b', name: 'Edit', input: { file_path: 'b.js' } }]), toolResultLine('b', false),
+    asstBlocks([{ type: 'tool_use', id: 'c', name: 'Bash', input: { description: 'Run tests' } }]), toolResultLine('c', false),
+    asstBlocks([{ type: 'tool_use', id: 'd', name: 'Write', input: { file_path: 'd.js' } }]), toolResultLine('d', true),
+    asstBlocks([{ type: 'tool_use', id: 'e', name: 'Bash', input: { description: 'Check diff' } }]), toolResultLine('e', false),
+  ]);
+  assert.deepEqual(transcript.completedActions(p), [
+    { name: 'Edit', label: 'b.js', ts: '2026-07-11T10:00:01.000Z' },
+    { name: 'Bash', label: 'Run tests', ts: '2026-07-11T10:00:01.000Z' },
+    { name: 'Bash', label: 'Check diff', ts: '2026-07-11T10:00:01.000Z' },
+  ]);
+});

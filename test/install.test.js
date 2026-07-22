@@ -25,9 +25,9 @@ function run(f, args, port = nextPort++) {
   });
 }
 
-function status(port) {
+function status(port, pathname = '/live') {
   return new Promise(resolve => {
-    const req = http.get({ host: '127.0.0.1', port, path: '/live', timeout: 1000 }, res => {
+    const req = http.get({ host: '127.0.0.1', port, path: pathname, timeout: 1000 }, res => {
       res.resume(); res.on('end', () => resolve(res.statusCode));
     });
     req.on('error', () => resolve(0));
@@ -48,12 +48,15 @@ test('fresh --no-start install syncs whitelist, seeds config, and generates port
   const res = run(f, ['--no-start']);
   assert.equal(res.status, 0, res.stderr || res.stdout);
   const whitelist = fs.readFileSync(path.join(REPO, 'files.whitelist'), 'utf8').trim().split(/\s+/);
+  assert.ok(whitelist.includes('mobile.html'), 'mobile.html must be installed');
+  assert.ok(whitelist.includes('home.html'), 'home.html must be installed');
+  assert.ok(whitelist.includes('help.html'), 'help.html must be installed');
   for (const file of whitelist) assert.deepEqual(fs.readFileSync(path.join(f.mirror, file)), fs.readFileSync(path.join(REPO, 'src', file)));
   assert.ok(fs.existsSync(path.join(f.mirror, 'config.json')));
   assert.ok(fs.existsSync(path.join(f.mirror, 'watchers', 'watcher-config.json')));
   const hooks = fs.readFileSync(path.join(f.mirror, 'generated-hooks.json'), 'utf8');
   assert.doesNotThrow(() => JSON.parse(hooks));
-  assert.ok(!hooks.includes('__MIRROR__'));
+  assert.ok(!hooks.includes('omaralsumait'));
 });
 
 test('reinstall never overwrites personalized config', () => {
@@ -76,11 +79,12 @@ test('--merge-hooks installs settings idempotently', () => {
   assert.equal(fs.readFileSync(f.settings, 'utf8'), first);
 });
 
-test('full install starts the cockpit and serves /live', async () => {
+test('full install starts the cockpit and serves /live and /m', async () => {
   const f = fixture();
   const port = nextPort++;
   ports.push(port);
   const res = run(f, [], port);
   assert.equal(res.status, 0, res.stderr || res.stdout);
   assert.equal(await status(port), 200);
+  assert.equal(await status(port, '/m'), 200);
 });

@@ -18,6 +18,7 @@ exit 0
   process.env.COCKPIT_DIR = dir;
   process.env.CK_TMUX_BIN = stub;
   process.env.CK_TEST_CMD = 'sleep 5';
+  process.env.CK_CODEX_LAUNCH_ROOT = path.join(dir, 'codex-launches');
   delete require.cache[require.resolve('../chats.js')];
   return { chats: require('../chats.js'), dir, log };
 }
@@ -29,6 +30,12 @@ test('validate rejects bad model, effort, cwd', () => {
   assert.match(chats.validate({ cwd: '/etc', model: 'sonnet', effort: 'high' }), /home/);
   assert.match(chats.validate({ cwd: '/nope-nope', model: 'sonnet', effort: 'high' }), /exist/);
   assert.equal(chats.validate({ cwd: os.homedir(), model: 'sonnet', effort: 'high' }), null);
+  assert.equal(chats.validate({ cwd: os.homedir(), model: 'gpt-5.6-sol', effort: 'high', provider: 'codex' }), null);
+  assert.equal(chats.validate({ cwd: os.homedir(), model: 'gpt-5.6-sol', effort: 'minimal', provider: 'codex' }), null);
+  assert.match(chats.validate({ cwd: os.homedir(), model: 'gpt-5.6-sol', effort: 'xhigh', provider: 'codex' }), /effort/);
+  assert.match(chats.validate({ cwd: os.homedir(), model: 'gpt-5.6-sol', effort: 'max', provider: 'codex' }), /effort/);
+  assert.match(chats.validate({ cwd: os.homedir(), model: 'sonnet', effort: 'high', provider: 'codex' }), /model/);
+  assert.match(chats.validate({ cwd: os.homedir(), model: 'gpt-5.6-sol', effort: 'high', provider: 'other' }), /provider/);
 });
 
 test('createChat registers chat and passes cwd + command to tmux', (t, done) => {
@@ -39,12 +46,60 @@ test('createChat registers chat and passes cwd + command to tmux', (t, done) => 
     const reg = JSON.parse(fs.readFileSync(path.join(dir, 'chats.json'), 'utf8'));
     assert.equal(reg.length, 1);
     assert.equal(reg[0].model, 'haiku');
+    assert.equal(reg[0].provider, 'claude');
     const calls = fs.readFileSync(log, 'utf8');
     assert.match(calls, /new-session -d -s ck-my-test-task/);
     assert.match(calls, new RegExp('-c ' + os.homedir()));
     assert.match(calls, /sleep 5/);            // CK_TEST_CMD used
     assert.match(calls, /send-keys .* -l hello world/); // prompt typed literally
     done();
+  });
+});
+
+test('legacy chats default to the claude provider when loaded', () => {
+  const { chats, dir } = freshEnv();
+  fs.writeFileSync(path.join(dir, 'chats.json'), JSON.stringify([{ name: 'ck-old', title: 'old' }]));
+  assert.equal(chats.listChats()[0].provider, 'claude');
+});
+
+test('createChat launches Codex in a unique correlation cwd and persists its provider', (t, done) => {
+  const { chats, dir, log } = freshEnv();
+  delete process.env.CK_TEST_CMD;
+  const requested = process.env.CK_REPO_ROOT;
+  chats.createChat({ provider: 'codex', title: 'codex task', cwd: requested, model: 'gpt-5.6-sol', effort: 'high' }, (err, chat) => {
+    assert.ifError(err);
+    assert.equal(chat.provider, 'codex');
+    assert.equal(chat.requestedCwd, requested);
+    assert.match(chat.cwd, new RegExp('^' + path.join(dir, 'codex-launches', 'run-').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.notEqual(chat.cwd, requested);
+    assert.equal(fs.realpathSync(path.join(chat.cwd, 'workspace')), requested);
+    const reg = JSON.parse(fs.readFileSync(path.join(dir, 'chats.json'), 'utf8'));
+    assert.equal(reg[0].provider, 'codex');
+    assert.equal(reg[0].cwd, chat.cwd);
+    const calls = fs.readFileSync(log, 'utf8');
+    assert.match(calls, new RegExp('-c ' + chat.cwd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(calls, /codex --model gpt-5\.6-sol --config model_reasoning_effort=high --add-dir /);
+    assert.match(calls, new RegExp(requested.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    chats.killChat(chat.name);
+    assert.equal(fs.existsSync(chat.cwd), false);
+    done();
+  });
+});
+
+test('Codex defaults its model and rejects unknown providers or Claude-only profiles', (t, done) => {
+  const { chats } = freshEnv();
+  chats.createChat({ provider: 'wat' }, err => {
+    assert.match(err.message, /invalid provider/);
+    chats.createChat({ provider: 'codex', profile: 'nondev' }, err2 => {
+      assert.match(err2.message, /only the dev/);
+      chats.createChat({ provider: 'codex', cwd: os.homedir(), effort: 'medium' }, (err3, chat) => {
+        assert.ifError(err3);
+        assert.equal(chat.model, 'gpt-5.6-sol');
+        assert.equal(chat.provider, 'codex');
+        chats.killChat(chat.name);
+        done();
+      });
+    });
   });
 });
 

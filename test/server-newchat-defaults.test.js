@@ -10,7 +10,7 @@ const DIR = path.join(__dirname, '..');
 const PORT = 3900;
 const BASE = `http://localhost:${PORT}`;
 
-test('POST /api/chats persists model/effort/ultracode; GET /api/new-chat-defaults serves them back', async () => {
+test('POST /api/chats persists provider/model/effort/ultracode; GET /api/new-chat-defaults serves them back', async () => {
   const state = fs.mkdtempSync(path.join(os.tmpdir(), 'cknewchat-'));
   const log = path.join(state, 'tmux.log');
   const stub = path.join(state, 'tmux-stub.sh');
@@ -32,11 +32,12 @@ exit 0
     const H = { 'x-cockpit-token': token, 'Content-Type': 'application/json' };
     const created = await fetch(`${BASE}/api/chats`, {
       method: 'POST', headers: H,
-      body: JSON.stringify({ title: 'defaults test', cwd: os.homedir(), model: 'opus', effort: 'high', ultracode: true, prompt: 'hi' }),
+      body: JSON.stringify({ provider: 'claude', title: 'defaults test', cwd: os.homedir(), model: 'opus', effort: 'high', ultracode: true, prompt: 'hi' }),
     });
     assert.equal(created.status, 201);
     const defaults = await (await fetch(`${BASE}/api/new-chat-defaults`)).json();
     assert.equal(defaults.model, 'opus');
+    assert.equal(defaults.provider, 'claude');
     assert.equal(defaults.effort, 'high');
     assert.equal(defaults.ultracode, true);
     // unguarded: no token required

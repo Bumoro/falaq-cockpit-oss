@@ -49,6 +49,60 @@ function readMeta(file) {
   finally { if (fd !== undefined) { try { fs.closeSync(fd); } catch (e) {} } }
   return null;
 }
+function readContext(file) {
+  let raw;
+  try { raw = fs.readFileSync(file, 'utf8'); } catch (e) { return null; }
+  const lines = raw.split('\n');
+  let model = null;
+  let context = null;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (!lines[i]) continue;
+    let o;
+    try { o = JSON.parse(lines[i]); } catch (e) { continue; }
+    const payload = o && o.payload;
+    if (!model && o.type === 'turn_context' && payload && typeof payload.model === 'string') {
+      model = payload.model;
+      if (context) return { ...context, model };
+    }
+    if (context || !payload || payload.type !== 'token_count') continue;
+    const info = payload.info;
+    const tokens = info && info.last_token_usage && info.last_token_usage.total_tokens;
+    const limit = info && info.model_context_window;
+    // total_token_usage is deliberately not consulted: it is the lifetime sum, not current context.
+    if (!Number.isFinite(tokens) || tokens < 0 || !Number.isFinite(limit) || limit <= 0) continue;
+    context = { tokens, limit, pct: tokens / limit };
+    model = (info && info.model) || model;
+    if (model) return { ...context, model };
+  }
+  return context ? { ...context, model: null } : null;
+}
+function readInsights(file, cwd) {
+  let raw;
+  try {
+    const size = fs.statSync(file).size;
+    if (size > 8 * 1024 * 1024) return { prompts: [], touchedFiles: [] };
+    raw = fs.readFileSync(file, 'utf8');
+  } catch (e) { return { prompts: [], touchedFiles: [] }; }
+  const prompts = [], calls = new Map(), touched = new Set();
+  for (const line of raw.split('\n')) {
+    let o; try { o = JSON.parse(line); } catch (e) { continue; }
+    const p = o && o.payload;
+    if (o.type === 'event_msg' && p && p.type === 'user_message' && typeof p.message === 'string') {
+      const value = p.message.replace(/\s+/g, ' ').trim();
+      if (value && prompts[prompts.length - 1] !== value) prompts.push(value);
+    }
+    if (o.type === 'response_item' && p && p.type === 'function_call' && p.call_id) calls.set(p.call_id, p);
+    if (o.type !== 'response_item' || !p || p.type !== 'function_call_output' || !p.call_id || /error|failed/i.test(String(p.output || ''))) continue;
+    const call = calls.get(p.call_id);
+    if (!call || call.name !== 'apply_patch') continue;
+    let args = {}; try { args = JSON.parse(call.arguments || '{}'); } catch (e) {}
+    for (const match of String(args.patch || '').matchAll(/^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm)) {
+      const file = match[1].trim();
+      touched.add(path.isAbsolute(file) ? path.normalize(file) : path.resolve(cwd || '', file));
+    }
+  }
+  return { prompts, touchedFiles: [...touched].slice(-100) };
+}
 let _cache = null, _cacheAt = 0;
 function activeTasks(opts) {
   // The server polls /api/workers every ~2s (× open tabs); cache the no-arg result briefly so a
@@ -73,12 +127,18 @@ function activeTasks(opts) {
             const meta = readMeta(fp);
             if (!meta) continue;
             const cwd = meta.cwd || '';
+            const insights = readInsights(fp, cwd);
             out.push({
               id: String(meta.id || f).slice(0, 40),
               cwd,
               client: resolveClient(cwd, map),
               originator: String(meta.originator || '').slice(0, 40),
               lastActivity: Math.round(mt),
+              rolloutPath: fp,
+              prompts: insights.prompts,
+              lastPrompt: insights.prompts[insights.prompts.length - 1] || '',
+              touchedFiles: insights.touchedFiles,
+              context: readContext(fp),
             });
           }
         }
@@ -87,4 +147,4 @@ function activeTasks(opts) {
   if (!opts) { _cache = out; _cacheAt = Date.now(); }
   return out;
 }
-module.exports = { activeTasks };
+module.exports = { activeTasks, readInsights };

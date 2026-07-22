@@ -47,6 +47,9 @@ try {
 
   const now = Date.now();
   s.sessionId = id;
+  // The hook is spawned by the Claude process itself, so ppid IS the Claude CLI's PID —
+  // recorded so the cockpit's save-&-kill can terminate uncontrolled terminal sessions.
+  if (process.ppid > 1) s.pid = process.ppid;
   if (data.cwd) s.cwd = data.cwd;
   if (data.transcript_path) s.transcriptPath = data.transcript_path;
   s.client = resolveClient(s.cwd, DIR);

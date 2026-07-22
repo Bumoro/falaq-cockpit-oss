@@ -43,7 +43,7 @@ test('--print writes resolved, portable generated-hooks.json and --check reports
   const output = fs.readFileSync(path.join(f.mirror, 'generated-hooks.json'), 'utf8');
   assert.deepEqual(JSON.parse(output), JSON.parse(res.stdout));
   assert.ok(!output.includes('__MIRROR__'));
-  assert.ok(!output.includes('__MIRROR__'));
+  assert.ok(!output.includes('omaralsumait'));
 
   res = run(f, ['--check', '--settings', f.settings]);
   assert.equal(res.status, 1);

@@ -5,8 +5,9 @@ const path = require('path');
 
 // Ships OFF by default (opt-in via the /live toggle or config). Auto-injecting a "wrap up and stop"
 // message into a live controlled chat is a surprising, unattended behavior change, so a fresh install
-// never does it until the operator turns it on. (Review panel MAJOR: enabled-by-default footgun.)
-const DEFAULTS = { enabled: false, thresholdPct: 0.85, autoRestart: false };
+// never does it until the operator turns it on. Once enabled, start looking for a stopping point at
+// 50% so sessions wrap earlier, with enough context left to close cleanly.
+const DEFAULTS = { enabled: false, thresholdPct: 0.50, autoRestart: false };
 const WRAP_MSG = "We're running low on context (auto-wrap). Follow your session-close protocol now: write the session log / update your task tracker as your setup dictates, then STOP. On the very last line, output the exact prompt to resume this work in a fresh session, wrapped EXACTLY as: <RESUME>your resume prompt here</RESUME> — nothing after it.";
 
 function stateDir() { return process.env.COCKPIT_DIR || __dirname; }
@@ -68,6 +69,9 @@ function tick(sessions, deps, now) {
 
   for (const s of current) {
     if (!s || !s.sessionId) continue;
+    // The wrap/restart protocol is implemented with Claude Code prompts/settings. Other providers may
+    // expose context percentages for the passive UI warning, but must never enter this relaunch flow.
+    if ((s.provider || 'claude') !== 'claude') continue;
     const existing = state[s.sessionId];
     // Safety-critical: injection is permitted only at the explicit idle REPL state.
     if (!existing && config.enabled && s.chatName && s.context && s.context.pct >= config.thresholdPct && s.state === 'idle') {

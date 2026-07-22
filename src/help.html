@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Help · Falaq Cockpit</title>
+<style>
+:root{color-scheme:light dark;
+  --bg:#F5F5F7;--surface:#FFFFFF;--surface-2:#FBFBFD;
+  --ink:#1D1D1F;--ink-2:#6E6E73;--ink-3:#6E6E73;
+  --line:#D2D2D7;--line-2:#E8E8ED;
+  --blue:#0071E3;--link:#0066CC;--amber:#8A5A00;--amber-bg:#FBF1DD;
+  --radius:18px;--radius-sm:12px;
+  --shadow:0 4px 24px -10px rgba(0,0,0,.10),0 1px 2px rgba(0,0,0,.04);
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#000000;--surface:#1C1C1E;--surface-2:#161617;
+  --ink:#F5F5F7;--ink-2:#A1A1A6;--ink-3:#8A8A8E;
+  --line:#38383C;--line-2:#2A2A2C;
+  --blue:#0A70E0;--link:#2997FF;--amber:#FFB340;--amber-bg:#332609;
+  --shadow:0 8px 30px -12px rgba(0,0,0,.6)}}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
+a{color:var(--link)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:7px}
+.shell{width:min(100% - 44px,760px);margin:auto;padding-bottom:96px}
+header{height:72px;display:flex;align-items:center;border-bottom:1px solid var(--line-2)}
+.back{text-decoration:none;font-size:15px;padding:9px 0}.back:hover{text-decoration:underline}
+main{padding-top:clamp(50px,8vw,82px)}
+.kicker{margin:0 0 8px;color:var(--ink-2);font-size:15px}
+h1{margin:0 0 18px;font-size:clamp(38px,7vw,58px);font-weight:600;line-height:1.05;letter-spacing:-.045em}
+.intro{max-width:610px;margin:0 0 64px;color:var(--ink-2);font-size:19px;line-height:1.55;letter-spacing:-.015em}
+.guide{display:grid;grid-template-columns:180px 1fr;gap:0 34px}
+.guide section{position:relative;grid-column:2;padding:30px 0;border-top:1px solid var(--line-2)}
+.guide section::before{content:attr(data-step);position:absolute;transform:translateX(-214px);color:var(--ink-3);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+h2{margin:0 0 10px;font-size:23px;line-height:1.25;font-weight:600;letter-spacing:-.025em}
+p{margin:0;color:var(--ink-2)}
+p+p{margin-top:10px}
+.screens{margin:16px 0 0;padding:0;list-style:none;display:grid;gap:10px}
+.screens li{padding:14px 16px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--radius-sm);box-shadow:var(--shadow);color:var(--ink-2)}
+.screens strong{color:var(--ink);font-weight:600}
+.callout{margin-top:16px;padding:16px 18px;border-radius:var(--radius-sm);background:var(--amber-bg);color:var(--amber)}
+.callout strong{font-weight:600}
+.contact{display:inline-block;margin-top:16px;text-decoration:none}.contact:hover{text-decoration:underline}
+@media (max-width:660px){.shell{width:min(100% - 32px,760px);padding-bottom:64px}header{height:62px}main{padding-top:46px}.intro{margin-bottom:44px}.guide{display:block}.guide section{padding:26px 0}.guide section::before{position:static;display:block;transform:none;margin-bottom:7px}.screens li{padding:13px 14px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header><a class="back" href="/">← Back to Falaq</a></header>
+  <main>
+    <p class="kicker">A quick guide</p>
+    <h1>Help with Falaq</h1>
+    <p class="intro">You do not need to know how the technical parts work. Falaq gives you a simple place to ask Claude for help and see when it needs your decision.</p>
+
+    <div class="guide">
+      <section data-step="Start here">
+        <h2>What is this?</h2>
+        <p>Falaq is a cockpit for working with Claude. You can start conversations, keep an eye on work in progress, and answer questions without using a terminal.</p>
+      </section>
+
+      <section data-step="Choose a view">
+        <h2>The three screens</h2>
+        <ul class="screens">
+          <li><strong>Chat with Claude</strong> is where you start a conversation and continue it.</li>
+          <li><strong>Mission Control</strong> shows every session and brings decisions that need you to the top.</li>
+          <li><strong>Phone view</strong> keeps the essentials easy to reach on a smaller screen.</li>
+        </ul>
+      </section>
+
+      <section data-step="When prompted">
+        <h2>What “Needs you” means</h2>
+        <p>Claude has paused because it needs your choice or permission. Open the session, read the question, and choose an answer. Work will continue after you respond.</p>
+        <p class="callout"><strong>Not sure?</strong> Choose the safest option, or ask the person who runs your cockpit before approving anything you do not recognize.</p>
+      </section>
+
+      <section data-step="Begin">
+        <h2>Starting a new chat</h2>
+        <p>Open <a href="/chat">Chat with Claude</a>, choose <strong>New Chat</strong>, say what you need in everyday language, and send it. Safe mode lets Claude work only in its designated area, protecting the rest of your computer.</p>
+      </section>
+
+      <section data-step="Share context">
+        <h2>Attaching files and images</h2>
+        <p>Paste an image straight into the chat, or use the <strong>📎</strong> button to choose a file. Add a short note saying what you want Claude to look at or change.</p>
+      </section>
+
+      <section data-step="Get support">
+        <h2>When to ask for help</h2>
+        <p>Ask the person who runs your cockpit if a session repeatedly stops, the cockpit says it is offline, an approval mentions commands or access you do not understand, or you cannot find the work you started.</p>
+        <a class="contact" href="/">Return to the home screen →</a>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>
