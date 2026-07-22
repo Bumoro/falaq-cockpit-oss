@@ -63,9 +63,11 @@ Then open `http://localhost:3847`, start a **new** Claude Code session anywhere,
 
 Claude Code [hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) report each session's lifecycle to tiny per-session JSON files; the server aggregates them, reads transcripts for live activity, and drives controlled chats through `tmux`. ~0 idle overhead, no polling agents, nothing leaves your machine.
 
-## Docs
+## Docs & team setup
 
-- `docs/onboarding/INSTALL.md` — full install guide, written for an AI agent to execute
+- [`docs/onboarding/INSTALL.md`](docs/onboarding/INSTALL.md) — full install guide, written for an AI agent to execute
+- [`docs/onboarding/SYSTEM.md`](docs/onboarding/SYSTEM.md) — the working system around the cockpit: global agent instructions, session logs, plan-first rules, review gates
+- [`docs/onboarding/SHARED-MEMORY.md`](docs/onboarding/SHARED-MEMORY.md) — the **shared memory system for multiple agents**: how parallel Claude Code sessions share one persistent memory (file format, index, hubs), how to use it, and how to set it up
 - `./deploy.sh` — update an existing install (tests → sync → restart → verify)
 
 MIT licensed. Built by [Falaq](https://falaq.solutions) — we run our whole agency on AI agents; this is the dashboard we use every day.

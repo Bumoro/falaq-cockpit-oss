@@ -1,6 +1,6 @@
 # SYSTEM.md — the Falaq working system, for your agent to install
 
-**Audience:** the teammate's AI agent, after finishing `INSTALL.md`. This sets up *how we work*: global instructions, session logs, memory, and the gate habit. Everything below is a generic template — adapt the `<PLACEHOLDER>` values to your own accounts and paths.
+**Audience:** the teammate's AI agent, after finishing `INSTALL.md`. This sets up *how we work*: global instructions, session logs, memory, and the gate habit. It is the working system we run at Falaq, genericized for any team.
 
 ## 1. Install the global instructions template
 
@@ -33,7 +33,7 @@ Merge the template below into the user's `~/.claude/CLAUDE.md`. If the file exis
 - **Independent review before "done":** non-trivial changes get a review pass with the *author excluded* — a second model or a fresh agent. A blocking finding pauses the merge.
 - **Verify end-to-end:** never claim "done" without exercising the change (run it, click it, or test it). Say exactly what was and wasn't verified.
 ### 5. Gates — Never Idle on a Human
-- Work blocked on a human-only action (merge to prod, OAuth/2FA login, secrets, payments)? Record a gate: title starting `🔒 GATE:` with the exact action, exact command/link, one line of context, and the risk if delayed. <GATE_TARGET, default: a GATES.md in the repo — or a task in your PM tool if its MCP is connected>. Then switch to the next workstream or close the session cleanly. Never sit idle waiting.
+- Work blocked on a human-only action (merge to prod, OAuth/2FA login, secrets, payments)? Record a gate: title starting `🔒 GATE:` with the exact action, exact command/link, one line of context, and the risk if delayed. <GATE_TARGET, default: a GATES.md in the repo — or a Falaq OS dashboard task if the MCP is connected>. Then switch to the next workstream or close the session cleanly. Never sit idle waiting.
 
 ## Falaq Cockpit
 - Dashboard at http://localhost:3847/live (sessions, approvals, controlled chats) and /chat (friendly view). Installed per ~/falaq-cockpit/docs/onboarding/INSTALL.md. Update with `cd ~/falaq-cockpit && git pull && ./deploy.sh`.
@@ -59,17 +59,9 @@ Claude Code keeps per-project auto-memory under `~/.claude/projects/<project>/me
 
 Create the folder now: `mkdir -p <SESSIONS_DIR>/$(date +%Y-%m)`. Every session ends with a log (see template above). The log is the contract between sessions: next session starts by reading it. This is not optional ceremony — the cockpit's "Wrap & Save" button injects exactly this protocol into controlled chats.
 
-## 4. Optional integrations (set up only what you actually use)
+## 4. Team-specific pieces
 
-The working system pairs well with a few external tools, but none are required — the cockpit and the core workflow run without any of them. Wire up only what fits your setup:
-
-| Piece | What it is | Your action |
-|---|---|---|
-| A knowledge/notes tool (e.g. NotebookLM, a wiki) | Long-term memory of sessions/decisions across chats | Optional — point your session logs at it, or skip |
-| A PM / task tracker (via its MCP, if it has one) | Where GATE tasks and work items live | Optional — use it as your `GATE_TARGET`; otherwise a `GATES.md` in the repo works |
-| A private "agents" repo | Role-specialized subagent definitions + routing | Optional — only if your team maintains one |
-| Token-proxy / mail / review CLIs | Local dev conveniences | Optional; the system works without them |
-| A notes vault | Where session logs live | Use any directory as your `<SESSIONS_DIR>` |
+Anything bound to a specific team's accounts (task dashboards, private agent repos, notebook IDs) is intentionally absent here — substitute your own where the template says <PLACEHOLDER>. See also [SHARED-MEMORY.md](SHARED-MEMORY.md) for the full memory architecture.
 
 ## 5. Done
 
