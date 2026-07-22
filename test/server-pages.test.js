@@ -65,3 +65,10 @@ test('friendly pages are routed while the old dashboard remains at /classic', ()
     assert.match(served.body, marker, url);
   }
 });
+
+test('notifier exposes read-only status for the live System section', () => {
+  const served = request('/api/notify');
+  assert.equal(served.status, 200);
+  assert.match(served.headers['content-type'], /^application\/json/);
+  assert.deepEqual(JSON.parse(served.body), { enabled: true, idleReason: 'missing-channel', lastSentAt: null, lastError: null });
+});

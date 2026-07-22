@@ -210,6 +210,7 @@
   <summary><span class="chev">▸</span> <span class="nondev-only">Usage &amp; system</span><span class="dev-only">System &amp; usage</span><span class="dev-only" style="color:var(--ink-3);font-weight:400">— telemetry and background activity</span><span class="update-pill" id="updatePill">Update available</span></summary>
   <div class="system-body">
     <div class="update-line" id="updateLine" aria-live="polite"></div>
+    <div class="sub dev-only" id="notifyStatus">Notifier: loading…</div>
     <div class="strip" id="strip"></div>
     <h3 class="dev-only" id="watchersSec" style="display:none">Watchers</h3>
     <div class="strip dev-only" id="watchers"></div>
@@ -465,13 +466,15 @@ function tick(){ setClock(); if(TOKEN)loadDispatch(); Promise.all([
   fetch('/api/workers').then(r=>r.json()).catch(()=>({codex:[]})),
   fetch('/api/events').then(r=>r.json()).catch(()=>({tasks:[]})),
   fetch('/api/duplicates').then(r=>r.json()).catch(()=>({pairs:[]})),
-]).then(([sessions,chats,usage,watchers,workers,eventData,duplicates])=>{
+  fetch('/api/notify').then(r=>r.json()).catch(()=>({enabled:false,idleReason:'unavailable'})),
+]).then(([sessions,chats,usage,watchers,workers,eventData,duplicates,notify])=>{
   failCount=0; setOffline(false); chatsCache=chats;
   renderTasks(eventData&&eventData.tasks);
   renderDuplicates(duplicates,sessions);
   renderNeedsStrip(sessions,eventData&&eventData.tasks);
   renderFooter(eventData&&eventData.stats);
   renderStrip(sessions,chats,usage);
+  renderNotifyStatus(notify);
   renderWatchers(watchers);
   sessions.forEach(s=>{if(s.cwd)cwds.add(s.cwd);});
   document.getElementById('cwdList').innerHTML=[...cwds].map(c=>`<option value="${esc(c)}">`).join('');
@@ -580,6 +583,13 @@ function renderStrip(sessions,chats,usage){
   tiles.push(`<div class="tile count ${needs?'alarm':''}"><div class="lab">Needs You</div><div class="big">${needs}</div><div class="sub">${needs?'action required':'all clear'}</div></div>`);
   tiles.push(`<div class="tile count ${overCtx?'alarm':''}"><div class="lab">Over 50% ctx</div><div class="big">${overCtx}</div><div class="sub">${overCtx?'wrap &amp; save':'headroom ok'}</div></div>`);
   document.getElementById('strip').innerHTML=tiles.join('');
+}
+function renderNotifyStatus(status){
+  status=status||{};
+  const mode=status.enabled?'enabled':'disabled', idle=status.idleReason?`idle: ${status.idleReason}`:'ready';
+  const sent=status.lastSentAt?ago(status.lastSentAt):'never';
+  const error=status.lastError||'none';
+  document.getElementById('notifyStatus').textContent=`Notifier: ${mode} · ${idle} · last sent ${sent} · last error ${error}`;
 }
 function watcherColor(state){ const s=String(state||'').toLowerCase(); if(s==='green')return 'var(--green)'; if(s==='pending')return 'var(--amber)'; if(s==='red'||s==='error')return 'var(--red)'; return 'var(--dim)'; }
 function renderWatchers(watchers){

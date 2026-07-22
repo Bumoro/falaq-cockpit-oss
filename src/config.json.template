@@ -6,6 +6,13 @@
   "autoWrap": { "enabled": false, "thresholdPct": 0.50, "autoRestart": false },
   "usage": { "weeklyTokenCap": null },
   "update": { "check": true, "auto": true },
+  "notify": {
+    "enabled": true,
+    "slackChannelId": "",
+    "delaySec": 20,
+    "cooldownMin": 15,
+    "url": ""
+  },
   "dispatch": {
     "enabled": false,
     "concurrency": 1,

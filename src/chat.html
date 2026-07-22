@@ -124,7 +124,7 @@ function renderConversation(turns,s){
   const data=JSON.stringify({turns,pending:s.pending||null,state:s.state,ended});if(data===lastJSON)return;lastJSON=data;
   const el=document.getElementById('messages');el.className='';const atBottom=el.scrollTop+el.clientHeight>=el.scrollHeight-60;
   let html=(turns||[]).map(turnHTML).join('');
-  if(!sending&&s.pending&&s.pending.kind!=='none')html+=pendingHTML(s.pending);else if(s.state==='needs_you'&&!(s.pending&&s.pending.kind!=='none'))html+='<div class="card waiting">Claude is waiting on something that needs the full cockpit — ping your teammate.</div>';
+  if(!sending&&s.pending&&s.pending.kind!=='none')html+=pendingHTML(s.pending);else if(s.state==='needs_you'&&!(s.pending&&s.pending.kind!=='none'))html+='<div class="card waiting">Claude is waiting on something this chat view can't show — open Mission Control to answer.</div>';
   el.innerHTML=html||'<div class="empty">This conversation is just getting started.</div>';if(atBottom)el.scrollTop=el.scrollHeight;
 }
 async function answer(key){if(sending||window.chatEnded||!NAME)return;sending=true;const card=document.getElementById('pendingCard');if(card)card.hidden=true;try{await fetch(api('/keys'),{method:'POST',headers:H(),body:JSON.stringify({key})});}finally{sending=false;lastJSON='';tick();}}

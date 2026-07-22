@@ -10,6 +10,7 @@ context.js
 usage.js
 transcript.js
 watchers.js
+notify.js
 live.html
 mobile.html
 home.html

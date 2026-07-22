@@ -22,6 +22,7 @@ const dashboardState = require('./dashboard-state.js');
 const purposeMod = require('./purpose.js');
 const duplicatesMod = require('./duplicates.js');
 const updaterMod = require('./updater.js');
+const notifyMod = require('./notify.js');
 const PORT = parseInt(process.env.AGENT_DASHBOARD_PORT || '3847');
 const DIR = __dirname;
 const STATE_DIR = process.env.COCKPIT_DIR || DIR;
@@ -49,6 +50,7 @@ const purposeTitles = new purposeMod.PurposeTitles({ stateDir: STATE_DIR });
 const duplicateDetector = new duplicatesMod.DuplicateDetector({ stateDir: STATE_DIR });
 // Keep policy in this server layer so config changes are picked up on every scheduled run.
 const updater = new updaterMod.Updater({ stateDir: STATE_DIR, auto: false });
+const notifier = new notifyMod.Notifier({ stateDir: STATE_DIR });
 let duplicateSnapshot = { updatedAt: 0, pairs: [] };
 let TOKEN;
 try { TOKEN = fs.readFileSync(TOKEN_FILE, 'utf8').trim(); } catch (e) { TOKEN = ''; }
@@ -328,6 +330,11 @@ const server = http.createServer((req, res) => {
   if (parsed.pathname === '/api/duplicates') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify(duplicateSnapshot));
+  }
+
+  if (parsed.pathname === '/api/notify') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify(notifier.getStatus()));
   }
 
   if (parsed.pathname === '/api/duplicates/dismiss') {
@@ -709,7 +716,11 @@ server.listen(PORT, '127.0.0.1', () => {
 
 try { usageMod.refreshPreserving(); } catch (e) {}
 setInterval(() => { try { usageMod.refreshPreserving(); } catch (e) {} }, 60000).unref();
-setInterval(() => { try { autowrapMod.tick(buildSessions(), undefined, Date.now()); } catch (e) {} }, 30000).unref();
+setInterval(() => {
+  const sessions = buildSessions();
+  try { autowrapMod.tick(sessions, undefined, Date.now()); } catch (e) {}
+  notifier.tick(sessions).catch(() => {});
+}, 30000).unref();
 setInterval(() => { dispatchMod.tick(buildSessions(), undefined, Date.now()).catch(() => {}); }, 60000).unref();
 
 // Updating is deliberately best-effort: git/network/deploy failures are recorded by Updater and
