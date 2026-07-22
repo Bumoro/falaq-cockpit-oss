@@ -185,6 +185,26 @@
   .attach{font-size:13px;color:var(--ink-3);padding:0 16px 12px}.attach a{color:var(--link);cursor:pointer}
   @media (max-width:760px){.wrap{padding:0 16px 60px}header.brand{padding:0 16px;margin:0 -16px 8px}.autowrap-control{display:none}.needs-grid{grid-template-columns:1fr}.dl{display:none}.panel{max-width:100vw}.section-head{margin-top:38px}}
   @media (max-width:520px){header.brand img{display:none}.brand-sub{display:none}.clock{display:none}.hero{padding-top:28px}.card{padding:18px}.panel header{align-items:flex-start}.termbar-lbl{max-width:180px}}
+  @media (max-width:480px){
+    html,body{width:100%;max-width:100%;overflow-x:hidden}
+    .wrap{width:100%;max-width:100%;min-width:0}
+    .grid,.needs-grid{width:100%;grid-template-columns:minmax(0,1fr)}
+    .card{width:100%;max-width:100%;min-width:0}
+    .card .top,.card .approve,.task-card,.task-actions,.duplicate-banner{min-width:0}
+    .row,.needs-msg,.card .approve .q,.task-copy,.task-title,.client{max-width:100%}
+    .needs-msg,.card .approve .q,.client{min-width:0;overflow-wrap:anywhere}
+    .task-card{flex-wrap:wrap}.task-actions{flex-wrap:wrap}
+    .duplicate-banner>*{max-width:100%}.duplicate-banner button{white-space:normal;overflow-wrap:anywhere}
+    .system summary{flex-wrap:wrap}
+    .panel{inset:0;width:100%!important;max-width:none;height:100vh;height:100dvh;border:0;padding-bottom:calc(68px + env(safe-area-inset-bottom));box-shadow:none}
+    .panel .pgrab{display:none}
+    .panel header{min-width:0;max-width:100%;padding-top:max(14px,env(safe-area-inset-top))}
+    .panel header .title{min-width:0;max-width:100%}
+    .panel [data-action="close-panel"]{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:4;min-width:88px;min-height:44px;background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:var(--shadow-lift)}
+    .panel .termbar,.panel .kbar,.panel .attach{min-width:0;max-width:100%}
+    .panel .termbar{flex-wrap:wrap}.panel .termbar-lbl{min-width:0;max-width:100%}
+    #kbState,.panel .attach{min-width:0;overflow-wrap:anywhere}
+  }
   @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
 </style>
 </head>
