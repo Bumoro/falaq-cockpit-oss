@@ -4,6 +4,8 @@
 
 Everything runs **entirely on your own machine**: one plain-Node server bound to `127.0.0.1:3847`. No cloud, no accounts, no telemetry, no dependencies to `npm install`.
 
+![Falaq Cockpit mission control — live Claude Code session cards with approval buttons](docs/screenshot-live.png)
+
 ## Why
 
 If you run Claude Code (or Codex) seriously, you end up with 4–8 sessions in flight — and no way to see which one is blocked waiting for *you*. The cockpit turns that into a mission-control view: one glance shows what's working, what needs an answer, what finished, and how much of your weekly Claude limit is left. It's how we get the most out of a Claude Max + Codex subscription: keep every session busy, never leave one stuck on an approval you didn't see.
