@@ -45,6 +45,10 @@ git clone https://github.com/Bumoro/falaq-cockpit-oss.git && cd falaq-cockpit-os
 
 Then open `http://localhost:3847`, start a **new** Claude Code session anywhere, and watch its card appear (hooks load at session start, so the installing session itself won't show).
 
+## Updating
+
+The cockpit checks its Git origin for updates every 6 hours and installs clean, fast-forward updates automatically (tests run before the restart). Local changes are never overwritten: a dirty or diverged checkout blocks the update. Keep notifications but install manually with `update.auto: false`, or kill all checks with `update.check: false` in `~/.claude/agent-dashboard/config.json`. Manual path: `git pull && ./deploy.sh`.
+
 ## Requirements
 
 - macOS (Linux mostly works; the optional desktop launcher is macOS-only)

@@ -17,6 +17,7 @@ help.html
 index.html
 dashboard-state.js
 purpose.js
+updater.js
 duplicates.js
 chat.html
 nondev-profile.json

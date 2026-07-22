@@ -164,7 +164,11 @@ done
 # Stamp the repo location so runtime code (the nondev-profile __COCKPIT__ deny floors) can find the
 # real source checkout on any machine — teammates may clone anywhere, and env vars don't reach the
 # long-lived server.
-printf '%s' "$REPO" > "$MIRROR/.repo-root.deploy-tmp"
+# Record the MAIN clone, not whichever worktree happens to deploy — the auto-updater pulls this
+# path, and worktrees get removed after merge (which would silently disable updates).
+MAIN_ROOT="$(dirname "$(git -C "$REPO" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" 2>/dev/null)"
+[ -n "$MAIN_ROOT" ] && [ -d "$MAIN_ROOT/.git" ] || MAIN_ROOT="$REPO"
+printf '%s' "$MAIN_ROOT" > "$MIRROR/.repo-root.deploy-tmp"
 mv "$MIRROR/.repo-root.deploy-tmp" "$MIRROR/.repo-root"
 
 echo "Verifying sync..."

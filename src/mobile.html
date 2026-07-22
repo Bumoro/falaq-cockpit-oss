@@ -24,6 +24,7 @@
 *{box-sizing:border-box}html{background:var(--bg);overflow-x:hidden}body{margin:0;min-width:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--sans);letter-spacing:-.01em;-webkit-font-smoothing:antialiased;overflow-x:hidden}button{font:inherit;letter-spacing:inherit;cursor:pointer}button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.shell{width:100%;max-width:680px;margin:auto;padding:0 16px calc(34px + env(safe-area-inset-bottom))}
 header{position:sticky;top:0;z-index:10;height:56px;margin:0 -16px;padding:env(safe-area-inset-top) 16px 0;display:flex;align-items:center;gap:10px;background:color-mix(in srgb,var(--bg) 76%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line-2)}header h1{font-size:17px;font-weight:600;letter-spacing:-.02em;margin:0}header .sub{color:var(--ink-2);font-weight:400}header .stamp{margin-left:auto;color:var(--ink-3);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .offline{display:none;margin:12px 0 0;padding:11px 13px;border-radius:var(--radius-sm);background:var(--amber-bg);color:var(--amber);font-size:13px;font-weight:600}.offline.on{display:block}
+.update{display:none;align-items:center;gap:10px;margin:12px 0 0;padding:12px 13px;border:1px solid color-mix(in srgb,var(--blue) 28%,var(--line));border-radius:var(--radius-sm);background:var(--blue-bg);color:var(--ink-2);font-size:13px}.update.show{display:flex}.update-copy{flex:1;min-width:0}.update b{display:block;color:var(--ink);font-size:14px}.update button{min-height:40px;flex:none;border:0;border-radius:999px;padding:7px 11px;background:var(--blue);color:#fff;font-weight:650}.update button:disabled{cursor:wait;opacity:.62}
 .needs{display:none;margin:12px 0 0;padding:14px;border:1px solid color-mix(in srgb,var(--amber) 36%,var(--line));border-radius:var(--radius-sm);background:var(--amber-bg);color:var(--amber)}.needs.show{display:block}.needs-title{font-size:15px;font-weight:700}.needs-copy{font-size:13px;margin-top:3px;overflow-wrap:anywhere}
 .duplicate{display:none;margin:12px 0 0;padding:14px;border-radius:var(--radius-sm);background:var(--red);color:#fff;box-shadow:0 7px 24px color-mix(in srgb,var(--red) 38%,transparent)}.duplicate.show{display:block}.duplicate h2{font-size:16px;margin:0 0 5px}.duplicate .pair{font-weight:600;overflow-wrap:anywhere}.duplicate .qualifier{opacity:.82;font-weight:500}.duplicate-actions{display:grid;gap:8px;margin-top:12px}.duplicate button{min-height:44px;border:1px solid rgba(255,255,255,.78);border-radius:12px;background:#fff;color:#9D211A;padding:9px 11px;font-weight:700;text-align:left;overflow-wrap:anywhere}.duplicate button.dismiss{text-align:center;background:transparent;color:#fff}.duplicate button:disabled{opacity:.58;cursor:wait}.notice{margin-top:11px;padding-top:10px;border-top:1px solid rgba(255,255,255,.42);font-weight:700}.notice small{display:block;font-weight:500;overflow-wrap:anywhere}
 .usage{margin:18px 0 0;padding:16px;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--radius);box-shadow:var(--shadow)}.eyebrow{color:var(--ink-3);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}.usage-row{display:flex;align-items:flex-end;gap:12px;margin-top:4px}.usage-big{font-size:25px;line-height:1.15;font-weight:650;letter-spacing:-.03em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.usage-sub{margin-left:auto;color:var(--ink-2);font-size:13px;text-align:right;overflow-wrap:anywhere}.meter,.ctx-bar{height:6px;margin-top:12px;background:var(--gray-bg);border-radius:99px;overflow:hidden}.meter i,.ctx-bar i{display:block;height:100%;border-radius:99px;background:var(--blue)}
@@ -37,6 +38,7 @@ header{position:sticky;top:0;z-index:10;height:56px;margin:0 -16px;padding:env(s
 <div class="shell">
   <header><h1>Falaq <span class="sub">mobile</span></h1><span class="stamp" id="stamp">Connecting…</span></header>
   <div class="offline" id="offline" role="status">Offline — showing the last successful update.</div>
+  <div class="update" id="update" role="status"></div>
   <section class="needs" id="needs" aria-live="polite"></section>
   <section class="duplicate" id="duplicate" aria-live="assertive"></section>
   <section class="usage" id="usage"><div class="eyebrow">This week</div><div class="usage-row"><div class="usage-big">—</div><div class="usage-sub">Loading usage…</div></div></section>
@@ -47,6 +49,7 @@ header{position:sticky;top:0;z-index:10;height:56px;margin:0 -16px;padding:env(s
 <script>
 const STALE_MS=10*60*1000, AMBER=.35, WARN=.5;
 let TOKEN='', failCount=0, loading=false, duplicateCache=[], duplicateSessions=[], duplicateBusy=false, duplicateNotice=null, chatsCacheLast=[];
+let updateState=null,updateApplying=false,updatePollTimer=null;
 const CARD_COLORS=['#168C89','#8567D3','#9A7410','#BB4B77','#287FA3','#6F8617','#C05243','#5968C5'];
 function H(){return {'x-cockpit-token':TOKEN,'Content-Type':'application/json'};}
 function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -58,6 +61,19 @@ function stateLabel(state){return String(state||'unknown').replace(/_/g,' ').rep
 function ctxHtml(c){if(!c)return'';const raw=Number(c.pct)||0,pct=Math.max(0,Math.min(100,Math.round(raw*100))),cls=raw>=WARN?'red':raw>=AMBER?'amber':'';return `<div class="ctx ${esc(cls)}"><div class="ctx-label"><span>Context used</span><span>${esc(pct)}% · ${esc(fmtTok(c.tokens))}/${esc(fmtTok(c.limit))}</span></div><div class="ctx-bar"><i style="width:${esc(pct)}%"></i></div></div>`;}
 function setOffline(on){document.getElementById('offline').classList.toggle('on',on);}
 async function json(path,options){const r=await fetch(path,options);if(!r.ok)throw new Error(String(r.status));return r.json();}
+function updateBehind(state){const value=state&&state.behind;if(typeof value==='number')return Math.max(0,Math.floor(value));return value===true?1:0;}
+function renderUpdate(state){
+  updateState=state||{};const count=updateBehind(updateState),updating=updateState.status==='started'||updateApplying,
+    available=count>0&&!updateState.aheadOrDiverged&&!updateState.dirty&&!updateState.blocked&&updateState.checkEnabled!==false&&!updating,
+    el=document.getElementById('update');
+  if(updating){el.innerHTML='<span class="update-copy"><b>Updating the cockpit…</b></span>';el.classList.add('show');return;}
+  if(available){el.innerHTML=`<span class="update-copy"><b>A new cockpit version is available</b></span><button data-action="apply-update">Update now</button>`;el.classList.add('show');return;}
+  const lu=updateState.lastUpdate;
+  if(lu&&lu.status==='ok'){const key=String(lu.at)+'-'+String(lu.to||'');let seen=false;try{seen=localStorage.getItem('ck-update-seen-mobile')===key;if(!seen)localStorage.setItem('ck-update-seen-mobile',key);}catch(e){}if(!seen){const sha=String(lu.to||'').slice(0,7);el.innerHTML=`<span class="update-copy"><b>Cockpit updated${sha?' to '+esc(sha):''}</b></span>`;el.classList.add('show');return;}}
+  el.classList.remove('show');el.innerHTML='';
+}
+function pollForUpdatedServer(){let sawOffline=false,attempts=0;clearInterval(updatePollTimer);updatePollTimer=setInterval(async()=>{attempts++;try{const r=await fetch('/api/update',{headers:H(),cache:'no-store'});if(!r.ok)throw new Error();if(sawOffline||attempts>=90){clearInterval(updatePollTimer);location.reload();}}catch(e){sawOffline=true;}if(attempts>=180){clearInterval(updatePollTimer);updateApplying=false;renderUpdate(updateState);}},1000);}
+async function applyUpdate(){if(updateApplying)return;updateApplying=true;renderUpdate(updateState);try{const r=await fetch('/api/update/apply',{method:'POST',headers:H(),body:'{}'});if(!r.ok){const body=await r.json().catch(()=>({}));updateApplying=false;renderUpdate(updateState);alert(body.reason||body.blocked||'The update is currently blocked.');return;}pollForUpdatedServer();}catch(e){pollForUpdatedServer();}}
 
 function buildCards(sessions,chats){
   const claimed=new Set(),cards=[];
@@ -95,15 +111,16 @@ async function tick(){if(loading||document.hidden)return;loading=true;try{if(!TO
   // Sessions are the page's backbone — a failure there is a real outage. Secondary feeds fall
   // back per-endpoint (like live.html) so one flaky API degrades a section, not the whole page.
   const sessions=await json('/api/sessions');
-  const [chats,usage,eventData,duplicates]=await Promise.all([
+  const [chats,usage,eventData,duplicates,update]=await Promise.all([
     json('/api/chats',{headers:H()}).catch(e=>{if(String(e.message)==='403')TOKEN='';return chatsCacheLast;}),
     json('/api/usage').catch(()=>null),
     json('/api/events').catch(()=>null),
     json('/api/duplicates').catch(()=>({pairs:duplicateCache})),
+    json('/api/update',{headers:H(),cache:'no-store'}).catch(()=>null),
   ]);
-  chatsCacheLast=chats||[];failCount=0;setOffline(false);renderNeeds(sessions,eventData&&eventData.tasks);renderDuplicates(duplicates,sessions);if(usage)renderUsage(usage);renderSessions(sessions,chats||[]);if(eventData)renderTasks(eventData.tasks);document.getElementById('stamp').textContent='Updated just now';}catch(e){failCount++;if(failCount>=2)setOffline(true);document.getElementById('stamp').textContent='Reconnecting…';}finally{loading=false;}}
+  chatsCacheLast=chats||[];failCount=0;setOffline(false);renderNeeds(sessions,eventData&&eventData.tasks);renderDuplicates(duplicates,sessions);if(usage)renderUsage(usage);if(update)renderUpdate(update);renderSessions(sessions,chats||[]);if(eventData)renderTasks(eventData.tasks);document.getElementById('stamp').textContent='Updated just now';}catch(e){failCount++;if(failCount>=2)setOffline(true);document.getElementById('stamp').textContent='Reconnecting…';}finally{loading=false;}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
-document.addEventListener('click',e=>{const el=e.target.closest('[data-action]');if(!el)return;if(el.dataset.action==='dismiss-duplicate')dismissDuplicate();else if(el.dataset.action==='save-kill')saveKillDuplicate(el);else if(el.dataset.action==='task-update')updateTask(el);});
+document.addEventListener('click',e=>{const el=e.target.closest('[data-action]');if(!el)return;if(el.dataset.action==='dismiss-duplicate')dismissDuplicate();else if(el.dataset.action==='save-kill')saveKillDuplicate(el);else if(el.dataset.action==='task-update')updateTask(el);else if(el.dataset.action==='apply-update')applyUpdate();});
 fetch('/api/token').then(r=>{if(!r.ok)throw new Error();return r.text();}).then(t=>{TOKEN=t;}).catch(()=>{}).finally(tick);
 setInterval(tick,3000);
 </script>

@@ -143,6 +143,9 @@
   .system summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:16px 0;font-size:15px;font-weight:500;color:var(--ink-2)}
   .system summary::-webkit-details-marker{display:none}.system .chev{transition:transform .2s;color:var(--ink-3);font-size:12px}.system[open] .chev{transform:rotate(90deg)}
   .system-body{padding:6px 0 20px}.system h3{margin:22px 0 10px;font-size:15px;font-weight:600;color:var(--ink)}
+  .update-pill{display:none;margin-left:auto;border-radius:999px;padding:4px 9px;background:var(--blue-bg);color:var(--link);font-size:12px;font-weight:600}.update-pill.show{display:inline-flex}
+  .update-line{display:none;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:11px 13px;border:1px solid color-mix(in srgb,var(--blue) 28%,var(--line-2));border-radius:var(--radius-sm);background:var(--blue-bg);color:var(--ink-2);font-size:13px}.update-line.show{display:flex}.update-line .update-copy{flex:1;min-width:210px}.update-line b{color:var(--ink)}.update-line button{border:0;border-radius:999px;padding:6px 11px;background:var(--blue);color:#fff;font-weight:600}.update-line button:disabled{cursor:wait;opacity:.62}
+  .update-toast{display:none;position:fixed;right:22px;bottom:22px;z-index:40;max-width:min(360px,calc(100vw - 44px));padding:11px 14px;border-radius:12px;background:var(--ink);color:var(--bg);box-shadow:var(--shadow-lift);font-size:13px;font-weight:600}.update-toast.show{display:block}
   .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:14px}
   .tile{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
   .tile .lab{font-size:13px;color:var(--ink-3)}.tile .big{font-size:26px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:4px}.tile .sub{font-size:13px;color:var(--ink-3);margin-top:3px}
@@ -204,8 +207,9 @@
 <div class="duplicate-banner" id="duplicateBanner"></div>
 
 <details class="system" id="systemDetails">
-  <summary><span class="chev">▸</span> <span class="nondev-only">Usage &amp; system</span><span class="dev-only">System &amp; usage</span><span class="dev-only" style="color:var(--ink-3);font-weight:400">— telemetry and background activity</span></summary>
+  <summary><span class="chev">▸</span> <span class="nondev-only">Usage &amp; system</span><span class="dev-only">System &amp; usage</span><span class="dev-only" style="color:var(--ink-3);font-weight:400">— telemetry and background activity</span><span class="update-pill" id="updatePill">Update available</span></summary>
   <div class="system-body">
+    <div class="update-line" id="updateLine" aria-live="polite"></div>
     <div class="strip" id="strip"></div>
     <h3 class="dev-only" id="watchersSec" style="display:none">Watchers</h3>
     <div class="strip dev-only" id="watchers"></div>
@@ -213,6 +217,7 @@
     <div class="strip dev-only" id="workers"></div>
   </div>
 </details>
+<div class="update-toast" id="updateToast" role="status"></div>
 
 <section class="hero">
   <h1 id="heroTitle">All clear</h1>
@@ -279,7 +284,7 @@ const WARN=0.5, AMBER=0.35;               // context thresholds
 const PAGE_STARTED=Date.now();
 let prevNeeds=new Set(), failCount=0, TOKEN='', openChat=null, chatsCache=[], cwds=new Set(), taskCache=[], staleTasksOpen=false, duplicateCache=[], duplicateSessions=[], duplicateNotice=null, duplicateBusy=false, activeOnly=false;
 document.getElementById('brandLogo').addEventListener('error',e=>{e.currentTarget.style.display='none';});
-fetch('/api/token').then(r=>r.text()).then(t=>{TOKEN=t;loadAutoWrap();loadDispatch();}).catch(()=>{});
+fetch('/api/token').then(r=>r.text()).then(t=>{TOKEN=t;loadAutoWrap();loadDispatch();loadUpdate();}).catch(()=>{});
 function H(){return {'x-cockpit-token':TOKEN,'Content-Type':'application/json'};}
 function esc(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 const CARD_COLORS=[
@@ -324,6 +329,41 @@ function renderDispatch(data){
 async function loadDispatch(){try{const r=await fetch('/api/dispatch',{headers:H()});if(r.ok)renderDispatch(await r.json());}catch(e){}}
 async function setDispatchEnabled(enabled){const r=await fetch('/api/dispatch',{method:'POST',headers:H(),body:JSON.stringify({enabled})});if(r.ok)loadDispatch();}
 async function killDispatch(){if(!confirm('KILL SWITCH: disable dispatch and kill every active dispatched session?'))return;const r=await fetch('/api/dispatch/kill',{method:'POST',headers:H(),body:'{}'});if(r.ok)loadDispatch();}
+let updateState=null,updateApplying=false,updatePollTimer=null;
+function behindCount(state){const value=state&&state.behind;if(typeof value==='number')return Math.max(0,Math.floor(value));if(value===true)return 1;return 0;}
+function shortSha(value){return String(value||'').slice(0,7);}
+function showUpdatedToast(state){
+  if(!state||!state.lastUpdate||state.lastUpdate.status!=='ok')return;
+  const key=String(state.lastUpdate.at)+'-'+String(state.lastUpdate.to||'');
+  try{if(localStorage.getItem('ck-update-seen-live')===key)return;localStorage.setItem('ck-update-seen-live',key);}catch(e){}
+  const sha=shortSha(state.lastUpdate.to),toast=document.getElementById('updateToast');toast.textContent=`Cockpit updated${sha?' to '+sha:''}`;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),7000);
+}
+function renderUpdate(state){
+  updateState=state||{};showUpdatedToast(updateState);
+  const count=behindCount(updateState),updating=updateState.status==='started'||updateApplying,
+    available=count>0&&!updateState.aheadOrDiverged&&!updateState.dirty&&!updateState.blocked&&updateState.checkEnabled!==false&&!updating,
+    pill=document.getElementById('updatePill'),line=document.getElementById('updateLine');
+  pill.classList.toggle('show',available);pill.textContent=document.documentElement.classList.contains('dev')?`Update · ${count} behind`:'Update available';
+  if(updating){
+    line.className='update-line show';line.innerHTML='<span class="update-copy"><b>Updating the cockpit…</b></span>';
+  }else if(available){
+    const technical=`Update available — ${count} commit${count===1?'':'s'} behind`;
+    line.className='update-line show';line.innerHTML=`<span class="update-copy"><b class="nondev-only">A new cockpit version is available</b><b class="dev-only">${esc(technical)}</b></span><button data-action="apply-update">Update now</button>`;
+  }else if(updateState.lastUpdate&&updateState.lastUpdate.status==='failed'){
+    line.className='update-line show';line.innerHTML=`<span class="update-copy"><b class="nondev-only">The last update didn't finish — ask your teammate to run the deploy.</b><b class="dev-only">Update pulled but deploy didn't restart — run ./deploy.sh from the repo, or click retry.</b></span><button data-action="apply-update">Retry</button>`;
+  }else if((updateState.blocked||updateState.error)&&document.documentElement.classList.contains('dev')){
+    line.className='update-line show dev-only';line.innerHTML=`<span class="update-copy"><b>Update check blocked</b> — ${esc(updateState.blocked||updateState.error)}</span>`;
+  }else{line.className='update-line';line.innerHTML='';}
+}
+async function loadUpdate(){if(!TOKEN)return;try{const r=await fetch('/api/update',{headers:H(),cache:'no-store'});if(r.ok)renderUpdate(await r.json());}catch(e){}}
+function pollForUpdatedServer(){
+  let sawOffline=false,attempts=0;clearInterval(updatePollTimer);updatePollTimer=setInterval(async()=>{attempts++;try{const r=await fetch('/api/update',{headers:H(),cache:'no-store'});if(!r.ok)throw new Error();if(sawOffline||attempts>=90){clearInterval(updatePollTimer);location.reload();}}catch(e){sawOffline=true;}if(attempts>=180){clearInterval(updatePollTimer);updateApplying=false;renderUpdate(updateState);}},1000);
+}
+async function applyUpdate(){
+  if(updateApplying)return;updateApplying=true;renderUpdate(updateState);
+  try{const r=await fetch('/api/update/apply',{method:'POST',headers:H(),body:'{}'});const body=await r.json().catch(()=>({}));if(!r.ok){updateApplying=false;renderUpdate({...updateState,blocked:body.reason||body.blocked||`HTTP ${r.status}`});return;}pollForUpdatedServer();}
+  catch(e){pollForUpdatedServer();}
+}
 // prefer the file-based live agents (catches BACKGROUND agents the hook never saw); fall back to hook agents
 function agentsOf(x){ return (x&&x.liveAgents&&x.liveAgents.length)?x.liveAgents:((x&&x.agents)||[]); }
 function displayState(s){ if(!s.state)return 'idle';
@@ -714,7 +754,7 @@ function restorePanelWidth(){
   const root=document.documentElement,button=document.getElementById('devToggle'),system=document.getElementById('systemDetails');
   let enabled=false;try{enabled=localStorage.getItem('ck-devview')==='true';}catch(e){}
   root.classList.toggle('dev',enabled);system.open=enabled;button.setAttribute('aria-checked',String(enabled));
-  button.addEventListener('click',()=>{const on=root.classList.toggle('dev');system.open=on;if(!on&&panelMode==='full')toggleView();button.setAttribute('aria-checked',String(on));try{localStorage.setItem('ck-devview',String(on));}catch(e){}});
+  button.addEventListener('click',()=>{const on=root.classList.toggle('dev');system.open=on;if(!on&&panelMode==='full')toggleView();button.setAttribute('aria-checked',String(on));if(updateState)renderUpdate(updateState);try{localStorage.setItem('ck-devview',String(on));}catch(e){}});
 })();
 
 const ACTIONS={
@@ -732,6 +772,7 @@ const ACTIONS={
   'toggle-active-filter':()=>{activeOnly=!activeOnly;for(const id of ['grid','needsGrid'])document.getElementById(id).classList.toggle('active-only',activeOnly);const b=document.querySelector('[data-action="toggle-active-filter"]');b?.classList.toggle('active',activeOnly);b?.setAttribute('aria-pressed',String(activeOnly));},
   'term-zoom-out':()=>setTermSize(termSize-1), 'term-zoom-in':()=>setTermSize(termSize+1),
   'dispatch-kill':()=>killDispatch(),
+  'apply-update':()=>applyUpdate(),
 };
 document.addEventListener('click',e=>{
   const el=e.target.closest('[data-action]');
@@ -794,7 +835,7 @@ document.addEventListener('click',(e)=>{
   }
 });
 
-tick(); setInterval(tick,2000);
+tick(); setInterval(tick,2000); setInterval(loadUpdate,30000);
 </script>
 </body>
 </html>

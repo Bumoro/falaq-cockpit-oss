@@ -21,6 +21,7 @@ const dispatchTrigger = require('./dispatch/trigger.js');
 const dashboardState = require('./dashboard-state.js');
 const purposeMod = require('./purpose.js');
 const duplicatesMod = require('./duplicates.js');
+const updaterMod = require('./updater.js');
 const PORT = parseInt(process.env.AGENT_DASHBOARD_PORT || '3847');
 const DIR = __dirname;
 const STATE_DIR = process.env.COCKPIT_DIR || DIR;
@@ -39,8 +40,15 @@ const HELP_FILE = path.join(DIR, 'help.html');
 const PID_FILE = path.join(DIR, process.env.AGENT_DASHBOARD_PORT ? `server-${PORT}.pid` : 'server.pid');
 
 const TOKEN_FILE = path.join(STATE_DIR, '.token');
+function readUpdateConfig() {
+  let config = {};
+  try { config = JSON.parse(fs.readFileSync(path.join(STATE_DIR, 'config.json'), 'utf8')); } catch (e) {}
+  return updaterMod.normalizeUpdateConfig(config);
+}
 const purposeTitles = new purposeMod.PurposeTitles({ stateDir: STATE_DIR });
 const duplicateDetector = new duplicatesMod.DuplicateDetector({ stateDir: STATE_DIR });
+// Keep policy in this server layer so config changes are picked up on every scheduled run.
+const updater = new updaterMod.Updater({ stateDir: STATE_DIR, auto: false });
 let duplicateSnapshot = { updatedAt: 0, pairs: [] };
 let TOKEN;
 try { TOKEN = fs.readFileSync(TOKEN_FILE, 'utf8').trim(); } catch (e) { TOKEN = ''; }
@@ -364,6 +372,33 @@ const server = http.createServer((req, res) => {
     return res.end(TOKEN);
   }
 
+  if (parsed.pathname === '/api/update' || parsed.pathname === '/api/update/apply') {
+    if (req.headers['x-cockpit-token'] !== TOKEN) { res.writeHead(403); return res.end('forbidden'); }
+    const json = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+    if (parsed.pathname === '/api/update' && req.method === 'GET') {
+      let state = {};
+      try { state = updater.getState() || {}; } catch (e) { state = { error: e.message }; }
+      let autoEnabled = true, checkEnabled = true;
+      try { const uc = readUpdateConfig(); autoEnabled = uc.auto; checkEnabled = uc.check; } catch (e) {}
+      return json(200, { ...state, autoEnabled, checkEnabled });
+    }
+    if (parsed.pathname === '/api/update/apply' && req.method === 'POST') {
+      // the kill switch gates applying too — a disabled updater must not act on stale state
+      try { if (!readUpdateConfig().check) return json(409, { reason: 'updates-disabled' }); } catch (e) {}
+      return Promise.resolve()
+        .then(() => updater.applyUpdate())
+        .then(result => {
+          const state = result || {};
+          if (state.error || state.status === 'error') return json(500, { ...state, reason: 'update-failed' });
+          const reason = state.blocked || (state.status && state.status !== 'started' ? state.status : '');
+          if (reason) return json(409, { ...state, reason: String(reason) });
+          return json(202, state);
+        })
+        .catch(e => json(500, { reason: 'update-failed', error: e.message }));
+    }
+    res.writeHead(405); return res.end();
+  }
+
   if (parsed.pathname === '/api/usage') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     const cache = usageMod.readCache() || {};
@@ -676,6 +711,22 @@ try { usageMod.refreshPreserving(); } catch (e) {}
 setInterval(() => { try { usageMod.refreshPreserving(); } catch (e) {} }, 60000).unref();
 setInterval(() => { try { autowrapMod.tick(buildSessions(), undefined, Date.now()); } catch (e) {} }, 30000).unref();
 setInterval(() => { dispatchMod.tick(buildSessions(), undefined, Date.now()).catch(() => {}); }, 60000).unref();
+
+// Updating is deliberately best-effort: git/network/deploy failures are recorded by Updater and
+// must never interrupt the cockpit. Config is re-read for every run so the kill switch takes effect
+// without requiring a restart.
+async function runUpdateCheck() {
+  try {
+    const config = readUpdateConfig();
+    if (!config.check) return;
+    const state = await updater.check();
+    if (config.auto && state && state.behind > 0 && !state.dirty && !state.aheadOrDiverged && !state.blocked && !state.error) {
+      await updater.applyUpdate();
+    }
+  } catch (e) {}
+}
+setTimeout(runUpdateCheck, 60 * 1000).unref();
+setInterval(runUpdateCheck, 6 * 60 * 60 * 1000).unref();
 
 let purposeRefreshRunning = false;
 function refreshPurposeTitles() {
