@@ -36,7 +36,7 @@ after(() => {
 
 function request(pathname) {
   const response = { status: 0, headers: {}, body: '' };
-  const req = { url: pathname, method: 'GET', headers: {} };
+  const req = { url: pathname, method: 'GET', headers: { host: 'localhost:4988' } };
   const res = {
     setHeader(name, value) { response.headers[name.toLowerCase()] = value; },
     writeHead(status, headers = {}) {
@@ -71,4 +71,12 @@ test('notifier exposes read-only status for the live System section', () => {
   assert.equal(served.status, 200);
   assert.match(served.headers['content-type'], /^application\/json/);
   assert.deepEqual(JSON.parse(served.body), { enabled: true, idleReason: 'missing-channel', lastSentAt: null, lastError: null });
+});
+
+test('chat page is served without a stale browser cache', () => {
+  const served = request('/chat');
+  assert.equal(served.status, 200);
+  assert.match(served.headers['content-type'], /^text\/html/);
+  assert.equal(served.headers['cache-control'], 'no-cache');
+  assert.match(served.body, /id="chatSidebar"/);
 });

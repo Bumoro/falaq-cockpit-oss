@@ -77,6 +77,9 @@ function realDeps() {
   return {
     createChat: chats.createChat,
     killChat: chats.killChat,
+    // Strict reader: listChats()/loadChats() swallow read errors into [] which would look like
+    // "every chat is missing" and free every spawning slot at once.
+    listChats: chats.loadChatsStrict,
     checkCompletion: (task, cb) => completion.checkCompletion(task, {}, cb),
     notify: watchers.notify,
     now: Date.now,
@@ -106,6 +109,22 @@ async function tick(sessions, deps, now) {
 
     // 1) Advance running tasks by GROUND TRUTH (PR + CI). Await every completion check, THEN we save below.
     const live = Array.isArray(sessions) ? sessions : [];
+    // Promote/fail runs still waiting for their first prompt (promptPending launches).
+    // A registry READ failure holds state (never guess); a confirmed absence or a closed record is
+    // terminal — otherwise a killed/missing chat would reserve the slot forever (panel MAJOR).
+    let records = null;
+    for (const run of Object.values(state.runs)) {
+      if (run.phase !== 'spawning' || !run.chatName) continue;
+      if (records === null) { try { records = io.listChats ? io.listChats() : undefined; } catch (e) { records = undefined; } }
+      if (!Array.isArray(records)) break;
+      const rec = records.find(c => c && c.name === run.chatName);
+      let why = null;
+      if (!rec) why = 'chat record missing';
+      else if (rec.closed) why = 'chat closed before its first prompt was delivered';
+      else if (rec.promptUndelivered) why = 'first prompt never delivered';
+      if (why) { run.phase = 'failed'; run.finishedAt = clock; io.notify(`❌ dispatch ${run.chatName} failed: ${why}`, () => {}); }
+      else if (!rec.pendingPrompt) run.phase = 'running';
+    }
     await Promise.all(Object.keys(state.runs).map(async id => {
       const run = state.runs[id];
       if (run.phase !== 'running') return;
@@ -158,7 +177,11 @@ async function tick(sessions, deps, now) {
         io.notify(`❌ dispatch ${task.id} refused: session came up as '${chat.profile}', not the locked dispatch profile`, () => {});
         continue;
       }
-      state.runs[task.id].phase = 'running';
+      // A slow launch answers before the prompt is typed (promptPending). Keep the slot reserved as
+      // 'spawning' — promoting it to 'running' would let the completion pass mark it 'stuck' (no
+      // session yet, no PR) and free the slot while the prompt still lands later → over-concurrency
+      // (Review panel MAJOR #1). The next tick promotes it once the record shows the prompt delivered.
+      state.runs[task.id].phase = chat.promptPending ? 'spawning' : 'running';
       state.runs[task.id].chatName = chat.name;
     }
     if (config.dryRun) { state.dryRunPlan = plan; state.dryRunAt = clock; }

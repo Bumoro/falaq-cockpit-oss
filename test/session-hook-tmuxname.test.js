@@ -27,10 +27,10 @@ function run(payload, dir, env) {
 
 test('marker-less session inside a ck-* tmux pane derives chatName from the pane', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cktn-'));
-  const stub = tmuxStub(dir, 'ck-falaq-os');
-  const s = run({ session_id: 'legacy1', hook_event_name: 'SessionStart', cwd: '/Users/omaralsumait' }, dir,
+  const stub = tmuxStub(dir, 'ck-sample-chat');
+  const s = run({ session_id: 'legacy1', hook_event_name: 'SessionStart', cwd: '/Users/alice' }, dir,
     { TMUX_PANE: '%5', CK_TMUX_BIN: stub });
-  assert.equal(s.chatName, 'ck-falaq-os');
+  assert.equal(s.chatName, 'ck-sample-chat');
 });
 
 test('a tmux pane whose session is NOT a ck-* chat does not get a chatName', () => {

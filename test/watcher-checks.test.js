@@ -9,7 +9,7 @@ function withStubs(ghOut, gmailOut) {
   fs.writeFileSync(gm, `#!/bin/bash\ncat <<'EOF'\n${gmailOut}\nEOF\n`); fs.chmodSync(gm, 0o755);
   fs.writeFileSync(path.join(dir, 'watcher-config.json'), JSON.stringify({
     ci: { repos: ['owner/repo'] }, deploySha: { enabled: false },
-    email: { 'meta-bm': { account: 'omar', query: 'from:meta subject:verification' } },
+    email: { 'meta-bm': { account: 'me', query: 'from:meta subject:verification' } },
   }));
   process.env.COCKPIT_DIR = dir; process.env.CK_GH_CMD = gh; process.env.CK_GMAILX_CMD = gm;
   process.env.CK_WATCHER_CONFIG = path.join(dir, 'watcher-config.json');
@@ -82,7 +82,7 @@ test('email watchers are tagged sticky; ci/deploy are not', (t) => {
   assert.ok(!checks.find(c => c.name === 'deploy-sha').sticky, 'deploy-sha is not sticky');
 });
 
-// ---- the sorted-set hash: gmailx result ORDER must not change the state (the live salla flap) ----
+// ---- the sorted-set hash: gmailx result ORDER must not change the state (a live flap) ----
 
 test('email watcher state is stable under gmailx result reordering (sorted-set hash)', (t, done) => {
   const orderA = 'aaaaaaaaaaaa1111  Wed, 08 Jul 2026 11:00:00 +0000\n  Subj: one\n'

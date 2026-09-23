@@ -99,7 +99,7 @@ function emailCheck(name, conf) {
       const text = String(out || '');
       // Collect ALL matching message ids (each result line starts "<hexid>  <date>"), de-dupe and SORT,
       // then hash the whole set. gmailx result ordering is NOT stable, so keying off "the first id"
-      // flapped between two real hashes (seen live: salla 27c4d87d <-> 735c95c8). A sorted-set hash is
+      // flapped between two real hashes (seen live: two hashes alternating). A sorted-set hash is
       // stable under reordering and changes only when the matching set actually changes. `ids` lets the
       // runner fire on genuinely-new mail only (monotonic) — never on reordering or mail aging out.
       const ids = Array.from(new Set(text.match(/^[0-9a-f]{12,}(?=\s)/gm) || [])).sort();

@@ -33,7 +33,7 @@ afterEach(() => {
   while (dirs.length) fs.rmSync(dirs.pop(), { recursive: true, force: true });
 });
 
-// A live box may run on the DEFAULT threshold (enabled + autoRestart, no explicit thresholdPct), so
+// The maintainer's live box runs on the DEFAULT threshold (enabled + autoRestart, no explicit thresholdPct), so
 // prove the 0.50 default both APPLIES and FIRES through tick() — not just at the readConfig level.
 test('production default (threshold omitted) wraps an idle session once it crosses 50% context', () => {
   const { calls, deps } = setup({ autoWrap: { enabled: true, autoRestart: true } });
@@ -85,6 +85,15 @@ test('Codex at high context is passive only and never wraps or relaunches', () =
   assert.equal(fs.existsSync(autowrap._stateFile()), false);
 });
 
+test('every non-Claude provider stays passive above the wrap threshold', () => {
+  for (const provider of ['ollama', 'antigravity', 'agy']) {
+    const { calls, deps } = setup({ autoWrap: { enabled: true, thresholdPct: 0.50, autoRestart: true } });
+    autowrap.tick([session({ sessionId: provider, provider, context: { pct: 0.99 } })], deps, 1);
+    assert.deepEqual(calls.sent, [], provider);
+    assert.deepEqual(calls.created, [], provider);
+  }
+});
+
 test('send failures are fail-soft and are not recorded as wrapped', () => {
   const { deps } = setup(ON);
   deps.sendInput = () => { throw new Error('tmux unavailable'); };
@@ -133,6 +142,26 @@ test('autoRestart does NOT restart when Claude emits no real resume block (only 
   assert.equal(calls.created.length, 0, 'placeholder-only transcript must not spawn a continuation');
 });
 
+test('markWrapped registers a manual wrap: tick never double-injects and autoRestart continues it', () => {
+  const { calls, deps } = setup({ autoWrap: { enabled: true, thresholdPct: 0.85, autoRestart: true } });
+  autowrap.markWrapped('s1', 42);
+  assert.deepEqual(JSON.parse(fs.readFileSync(autowrap._stateFile(), 'utf8')), { s1: { phase: 'wrapped', wrappedAt: 42 } });
+  // Over-threshold AND idle — the exact case that would double-inject without the registration.
+  autowrap.tick([session()], deps, 100);
+  assert.deepEqual(calls.sent, []);
+  deps.readTranscript = () => '<RESUME>continue after manual wrap</RESUME>';
+  autowrap.tick([session()], deps, 200);
+  assert.equal(calls.created.length, 1);
+  assert.equal(calls.created[0].prompt, 'continue after manual wrap');
+});
+
+test('markWrapped without a sessionId is a no-op', () => {
+  setup(ON);
+  autowrap.markWrapped('', 1);
+  autowrap.markWrapped(undefined, 1);
+  assert.equal(fs.existsSync(autowrap._stateFile()), false);
+});
+
 test('readConfig supplies defaults (disabled) and rejects invalid thresholds', () => {
   setup();
   assert.deepEqual(autowrap.readConfig(), { enabled: false, thresholdPct: 0.50, autoRestart: false });
@@ -146,4 +175,32 @@ test('persistent state round-trips and vanished sessions are pruned', () => {
   assert.deepEqual(Object.keys(JSON.parse(fs.readFileSync(autowrap._stateFile(), 'utf8'))).sort(), ['s1', 's2']);
   autowrap.tick([session()], deps, 100);
   assert.deepEqual(Object.keys(JSON.parse(fs.readFileSync(autowrap._stateFile(), 'utf8'))), ['s1']);
+});
+
+test('continuation falls back to the provider default when the saved model/effort is no longer valid', () => {
+  const models = require('../models.js');
+  models._setCatalogForTests({
+    claude: { models: [{ id: 'sonnet', label: 'Sonnet', efforts: ['low', 'medium', 'high'] }, { id: 'opus', label: 'Opus', efforts: ['low', 'high'] }],
+      default: 'sonnet', efforts: ['low', 'medium', 'high'], defaultEffort: 'medium' },
+    codex: { models: [{ id: 'gpt-6-astra', label: 'GPT-6-Astra', efforts: ['low', 'medium', 'high'], defaultEffort: 'medium' }],
+      default: 'gpt-6-astra', efforts: ['low', 'medium', 'high'], defaultEffort: 'medium' },
+  });
+  try {
+    // retired codex model → provider default + its default effort
+    assert.deepEqual(autowrap._continuationModel({ provider: 'codex', model: 'gpt-5.6-sol', effort: 'ultra' }), { model: 'gpt-6-astra', effort: 'medium' });
+    // model still offered but the effort is not valid for it → default effort for that model
+    assert.deepEqual(autowrap._continuationModel({ provider: 'codex', model: 'gpt-6-astra', effort: 'ultra' }), { model: 'gpt-6-astra', effort: 'medium' });
+    assert.deepEqual(autowrap._continuationModel({ provider: 'codex', model: 'gpt-6-astra', effort: 'high' }), { model: 'gpt-6-astra', effort: 'high' });
+    // through tick(): a Claude chat on a retired model restarts on the provider default
+    const { calls, deps } = setup({ autoWrap: { enabled: true, thresholdPct: 0.85, autoRestart: true } });
+    deps.listChats = () => [{ name: 'ck-work', title: 'Work', model: 'claude-retired-1', effort: 'max', cwd: os.homedir(), profile: 'dev' }];
+    autowrap.tick([session()], deps, 1);
+    deps.readTranscript = () => '<RESUME>go on</RESUME>';
+    autowrap.tick([session()], deps, 2);
+    assert.equal(calls.created.length, 1);
+    assert.equal(calls.created[0].model, 'sonnet');
+    assert.equal(calls.created[0].effort, 'medium');
+  } finally {
+    models._setCatalogForTests(null);
+  }
 });

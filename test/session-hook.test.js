@@ -17,15 +17,61 @@ function run(payload, dir) {
   return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null;
 }
 
+test('path-traversal session id exits 0 without writing outside the sessions directory', (t) => {
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'ck-hook-parent-'));
+  const dir = path.join(parent, 'cockpit');
+  fs.mkdirSync(dir);
+  t.after(() => fs.rmSync(parent, { recursive: true, force: true }));
+
+  execFileSync('node', [HOOK], {
+    input: JSON.stringify({ session_id: '../../evil', hook_event_name: 'SessionStart', cwd: '/x' }),
+    env: { ...process.env, COCKPIT_DIR: dir },
+  });
+
+  assert.equal(fs.existsSync(path.join(parent, 'evil.json')), false);
+  assert.equal(fs.existsSync(path.join(dir, 'sessions')), false);
+});
+
+test('a missing or non-string session id writes nothing (RegExp.test stringifies its argument)', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ck-hook-missing-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  // test(undefined) matches the literal string "undefined" against [A-Za-z0-9_-]{1,100}, so an
+  // id-shape guard alone would happily write an `undefined.json` phantom session card.
+  for (const session_id of [undefined, null, 0, false, ['a']]) {
+    execFileSync('node', [HOOK], {
+      input: JSON.stringify({ session_id, hook_event_name: 'SessionStart', cwd: '/x' }),
+      env: { ...process.env, COCKPIT_DIR: dir },
+    });
+  }
+
+  const written = fs.existsSync(path.join(dir, 'sessions'))
+    ? fs.readdirSync(path.join(dir, 'sessions'))
+    : [];
+  assert.deepEqual(written, [], `no session file may be written, got ${written.join(', ')}`);
+});
+
+test('a normal UUID session id still writes correctly', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ck-hook-uuid-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const id = '123e4567-e89b-12d3-a456-426614174000';
+
+  const s = run({ session_id: id, hook_event_name: 'SessionStart', cwd: '/x' }, dir);
+
+  assert.equal(s.sessionId, id);
+  assert.equal(s.state, 'running');
+  assert.ok(fs.existsSync(path.join(dir, 'sessions', id + '.json')));
+});
+
 test('SessionStart creates session file with client mapping', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ck-'));
   fs.writeFileSync(path.join(dir, 'config.json'), JSON.stringify({
-    clientMap: { 'client-os': 'Client-OS', 'falaq-pixel': 'Falaq Pixel' }
+    clientMap: { 'acme-app': 'Acme App', 'other-app': 'Other App' }
   }));
   const s = run({ session_id: 'aaa', hook_event_name: 'SessionStart',
-    cwd: '/Users/omaralsumait/dev/client-os', model: 'claude-fable-5', transcript_path: '/tmp/x/t.jsonl' }, dir);
+    cwd: '/Users/alice/dev/acme-app', model: 'claude-fable-5', transcript_path: '/tmp/x/t.jsonl' }, dir);
   assert.equal(s.state, 'running');
-  assert.equal(s.client, 'Client-OS');
+  assert.equal(s.client, 'Acme App');
   assert.equal(s.model, 'claude-fable-5');
   assert.ok(s.startedAt > 0);
   assert.equal(s.transcriptPath, '/tmp/x/t.jsonl');

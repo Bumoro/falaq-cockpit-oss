@@ -16,11 +16,13 @@
 //      (80% raw == 96% shown), which was the "cockpit context% lags reality" bug.
 //      Mirrors gsd-statusline.js line-for-line and honors CLAUDE_CODE_AUTO_COMPACT_WINDOW.
 const fs = require('fs');
+const { readBounded, memoized } = require('./transcript.js');
 
 const NARROW = /haiku|sonnet-4-5/;
 const LIMIT_1M = 1000000;
 const LIMIT_200K = 200000;
 const SYNTHETIC = '<synthetic>';
+const READ_CAP = 256 * 1024;
 const DEFAULT_BUFFER_PCT = 16.5; // Claude Code's default auto-compact reserve, as a % of the window
 
 function limitFor(model) {
@@ -52,9 +54,13 @@ function usedFraction(tokens, limit) {
   return used / 100;
 }
 
-function contextForTranscript(p) {
-  let raw;
-  try { raw = fs.readFileSync(p, 'utf8'); } catch (e) { return null; }
+function usageNumber(value) {
+  if (value == null) return 0;
+  const n = Number(value);
+  return typeof value === 'number' && Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function contextFromRaw(raw) {
   const lines = raw.split('\n');
   for (let i = lines.length - 1; i >= 0; i--) {
     if (!lines[i]) continue;
@@ -65,13 +71,29 @@ function contextForTranscript(p) {
     if (model === SYNTHETIC) continue;
     const u = o.message && o.message.usage;
     if (u && (u.input_tokens != null || u.cache_read_input_tokens != null)) {
-      const tokens = (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
-      if (!tokens) return null;
+      const parts = [u.input_tokens, u.cache_read_input_tokens, u.cache_creation_input_tokens].map(usageNumber);
+      if (parts.some(n => n == null)) return null;
+      const tokens = parts[0] + parts[1] + parts[2];
+      if (!Number.isFinite(tokens) || tokens <= 0) return null;
       const limit = limitFor(model);
-      return { tokens, limit, usableLimit: usableLimitFor(limit), pct: usedFraction(tokens, limit), model };
+      const usableLimit = usableLimitFor(limit);
+      const pct = usedFraction(tokens, limit);
+      if (![limit, usableLimit, pct].every(Number.isFinite)) return null;
+      return { tokens, limit, usableLimit, pct, model };
     }
   }
   return null;
+}
+
+function contextForTranscript(p) {
+  return memoized('contextForTranscript', p, READ_CAP, null, () => {
+    const tail = readBounded(p, READ_CAP);
+    const result = contextFromRaw(tail.raw);
+    if (result || !tail.tailed) return result;
+    // A quiet session can have its last usage record before the tail window. Preserve correctness by
+    // doing one full read; memoized() ensures an unchanged transcript never pays this fallback twice.
+    return contextFromRaw(fs.readFileSync(p, 'utf8'));
+  });
 }
 
 module.exports = { contextForTranscript, limitFor, usedFraction, usableLimitFor };

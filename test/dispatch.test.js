@@ -135,3 +135,63 @@ test('an empty/invalid cutoff does NOT silently disable the cap (falls back to 0
   const dispatch = require('../dispatch.js');
   assert.strictEqual(dispatch.readConfig().caps.stopStartingAfter, '05:00');
 });
+
+test('promptPending spawn keeps the slot as spawning; promoted once the prompt is delivered, failed if undelivered', async () => {
+  const dir = sandbox(); writeConfig(dir, { enabled: true, concurrency: 1 });
+  writeQueue(dir, [task({ id: 'a' }), task({ id: 'b', cwd: '/tmp/r2' })]);
+  const dispatch = require('../dispatch.js');
+  let records = [{ name: 'dispatch-a', profile: 'dispatch', pendingPrompt: 'x' }];
+  let spawned = 0;
+  const deps = okDeps({
+    createChat: (o, cb) => { spawned++; cb(null, { name: o.title.replace(/\s+/g, '-'), profile: 'dispatch', promptPending: true }); },
+    listChats: () => records,
+    checkCompletion: (t2, cb) => cb(null, { state: 'none' }),
+  });
+  await dispatch.tick([], deps, EVENING);
+  assert.strictEqual(readState(dir).runs.a.phase, 'spawning', 'slot stays reserved while the prompt is pending');
+  await dispatch.tick([], deps, EVENING + 60000);
+  assert.strictEqual(readState(dir).runs.a.phase, 'spawning', 'neither promoted nor marked stuck while pendingPrompt persists');
+  assert.strictEqual(spawned, 1, 'no second task started while the slot is held');
+  records = [{ name: 'dispatch-a', profile: 'dispatch' }];
+  // once delivered the hook-tracked session exists; the completion pass must see it (else 'stuck')
+  await dispatch.tick([{ chatName: 'dispatch-a', state: 'running' }], deps, EVENING + 120000);
+  assert.strictEqual(readState(dir).runs.a.phase, 'running', 'promoted once the record shows delivery');
+  records = [{ name: 'dispatch-a', profile: 'dispatch', promptUndelivered: true, pendingPrompt: 'x' }];
+  fs.writeFileSync(path.join(dir, 'dispatch-state.json'), JSON.stringify({ runs: { a: { phase: 'spawning', chatName: 'dispatch-a', repo: 'o/r', cwd: '/tmp/r', branch: 'auto/a', startedAt: 0 } } }));
+  await dispatch.tick([], deps, EVENING + 180000);
+  assert.strictEqual(readState(dir).runs.a.phase, 'failed', 'an undelivered prompt fails the run instead of leaking the slot');
+});
+
+test('spawning runs whose chat record is missing or closed fail (slot released); a registry read failure holds state', async () => {
+  const dir = sandbox(); writeConfig(dir, { enabled: true, concurrency: 1 }); writeQueue(dir, []);
+  const dispatch = require('../dispatch.js');
+  const seed = () => fs.writeFileSync(path.join(dir, 'dispatch-state.json'), JSON.stringify({ runs: {
+    m: { phase: 'spawning', chatName: 'dispatch-m', repo: 'o/r', cwd: '/tmp/r', branch: 'auto/m', startedAt: 0 },
+    c: { phase: 'spawning', chatName: 'dispatch-c', repo: 'o/r', cwd: '/tmp/r2', branch: 'auto/c', startedAt: 0 },
+  } }));
+  seed();
+  const base = { checkCompletion: (t2, cb) => cb(null, { state: 'none' }) };
+  await dispatch.tick([], okDeps({ ...base, listChats: () => { throw new Error('registry unreadable'); } }), EVENING);
+  assert.strictEqual(readState(dir).runs.m.phase, 'spawning', 'read failure holds state');
+  assert.strictEqual(readState(dir).runs.c.phase, 'spawning');
+  await dispatch.tick([], okDeps({ ...base, listChats: () => [{ name: 'dispatch-c', profile: 'dispatch', pendingPrompt: 'x', closed: 5 }] }), EVENING + 60000);
+  assert.strictEqual(readState(dir).runs.m.phase, 'failed', 'missing record → failed');
+  assert.strictEqual(readState(dir).runs.c.phase, 'failed', 'closed record → failed');
+});
+
+test('through the REAL registry reader: a corrupt chats.json holds spawning runs instead of failing them', async () => {
+  const dir = sandbox(); writeConfig(dir, { enabled: true, concurrency: 1 }); writeQueue(dir, []);
+  delete require.cache[require.resolve('../chats.js')];
+  const chatsMod = require('../chats.js');
+  const dispatch = require('../dispatch.js');
+  fs.writeFileSync(path.join(dir, 'dispatch-state.json'), JSON.stringify({ runs: {
+    m: { phase: 'spawning', chatName: 'dispatch-m', repo: 'o/r', cwd: '/tmp/r', branch: 'auto/m', startedAt: 0 },
+  } }));
+  fs.writeFileSync(path.join(dir, 'chats.json'), '{corrupt');
+  const deps = okDeps({ checkCompletion: (t2, cb) => cb(null, { state: 'none' }), listChats: chatsMod.loadChatsStrict });
+  await dispatch.tick([], deps, EVENING);
+  assert.strictEqual(readState(dir).runs.m.phase, 'spawning', 'unreadable registry must hold, not free the slot');
+  fs.unlinkSync(path.join(dir, 'chats.json'));
+  await dispatch.tick([], deps, EVENING + 60000);
+  assert.strictEqual(readState(dir).runs.m.phase, 'failed', 'confirmed absence (no registry file) releases the slot');
+});

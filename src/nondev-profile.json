@@ -1,4 +1,9 @@
 {
+  "_read_floor_rules": [
+    "Read rules ONLY. Per the Claude Code permissions docs, file permission checks match only Edit(path) and Read(path). A Grep(path) or Glob(path) rule is ACCEPTED BUT NEVER MATCHED and emits a startup warning for every such rule. Read rules are instead applied best-effort to the file-reading tools (Grep, Glob, @file mentions, IDE context), so Read(...) IS how you cover them. Never add Grep(...) or Glob(...) path rules here.",
+    "ANCHORING: a bare/relative pattern like Read(**/.env) matches only at or under the CURRENT directory - it does NOT match a parent. Safe mode launches in a fresh throwaway workspace, so ~/.zshrc is always in a parent and a relative rule protects nothing. Anything outside the workspace MUST use ~/x (home-relative) or //x (filesystem root). //**/x matches anywhere on the filesystem.",
+    "NOT COVERED by this profile, by design: Bash(ls:*) enumerates any directory (ls is an unconfigurable read-only builtin), Task spawns subagents, WebSearch is an outbound channel. Read/Edit denies also do not apply to subprocesses that open files themselves. For real containment use a low-privilege OS user or the sandbox."
+  ],
   "permissions": {
     "defaultMode": "default",
     "allow": [
@@ -6,15 +11,24 @@
       "Bash(ls:*)", "Bash(pwd)", "Bash(which:*)", "Bash(git status:*)"
     ],
     "deny": [
+      "Read(//**/.ssh/**)", "Read(//**/id_rsa*)", "Read(//**/*.pem)", "Read(//**/.credentials.json)", "Read(//**/.env)", "Read(//**/.env.*)", "Read(//**/.netrc)",
       "Read(**/.ssh/**)", "Read(**/id_rsa*)", "Read(**/*.pem)", "Read(**/.credentials.json)", "Read(**/.env)", "Read(**/.env.*)",
       "Read(//__HOME__/.claude/**)", "Read(//__HOME__/.ssh/**)", "Read(//__HOME__/.aws/**)", "Read(//__HOME__/.config/**)", "Read(//__HOME__/.gnupg/**)",
+      "Read(//__HOME__/.claude.json)", "Read(//__HOME__/.claude.json.backup)", "Read(//**/.claude.json)", "Read(**/.claude.json)",
+      "Read(~/.zshrc)", "Read(~/.zprofile)", "Read(~/.zshenv)", "Read(~/.zlogin)", "Read(~/.bashrc)", "Read(~/.bash_profile)", "Read(~/.profile)", "Read(~/.netrc)",
+      "Read(//__HOME__/.zshrc)", "Read(//__HOME__/.zprofile)", "Read(//__HOME__/.zshenv)", "Read(//__HOME__/.zlogin)", "Read(//__HOME__/.bashrc)", "Read(//__HOME__/.bash_profile)", "Read(//__HOME__/.profile)", "Read(//__HOME__/.netrc)",
+      "Read(//__HOME__/.zsh_history)", "Read(//__HOME__/.bash_history)", "Read(//__HOME__/.npmrc)",
+      "Read(//__HOME__/Documents/Obsidian Vault/**)", "Read(//__HOME__/Downloads/**)",
 
-      "Write(**/.claude/**)", "Edit(**/.claude/**)", "NotebookEdit(**/.claude/**)", "Write(**/settings.json)", "Write(**/settings.local.json)", "Write(**/.claude/settings*.json)", "Write(**/nondev-profiles/**)",
-      "Write(//__HOME__/.claude/**)", "Edit(//__HOME__/.claude/**)", "Write(//__HOME__/.ssh/**)", "Write(//__HOME__/.aws/**)", "Write(//__HOME__/.config/**)", "Write(//__HOME__/.gnupg/**)",
-      "Write(//__HOME__/Library/LaunchAgents/**)", "Write(//__HOME__/Library/LaunchDaemons/**)", "Write(//__COCKPIT__/**)", "Edit(//__COCKPIT__/**)", "Write(//__MIRROR__/**)", "Edit(//__MIRROR__/**)",
-      "Write(**/falaq-cockpit/**)", "Edit(**/falaq-cockpit/**)",
-      "Write(**/.zshrc)", "Write(**/.zprofile)", "Write(**/.zshenv)", "Write(**/.zlogin)", "Write(**/.bashrc)", "Write(**/.bash_profile)", "Write(**/.profile)", "Edit(**/.zshrc)", "Edit(**/.zprofile)", "Edit(**/.bashrc)", "Edit(**/.bash_profile)",
-      "Write(**/.ssh/**)", "Write(**/authorized_keys)", "Write(**/*.pem)", "Write(**/id_rsa*)",
+      "Edit(**/.claude/**)", "Edit(**/settings.json)", "Edit(**/settings.local.json)", "Edit(**/.claude/settings*.json)", "Edit(//__HOME__/.cockpit-nondev/profiles/**)", "Read(//__HOME__/.cockpit-nondev/profiles/**)",
+      "Edit(//__HOME__/.claude/**)", "Edit(//__HOME__/.claude.json)", "Edit(//__HOME__/.ssh/**)", "Edit(//__HOME__/.aws/**)", "Edit(//__HOME__/.config/**)", "Edit(//__HOME__/.gnupg/**)",
+      "Edit(//__HOME__/Library/LaunchAgents/**)", "Edit(//__HOME__/Library/LaunchDaemons/**)", "Edit(//__COCKPIT__/**)", "Edit(//__MIRROR__/**)",
+      "Edit(**/falaq-cockpit/**)",
+      "Edit(~/.zshrc)", "Edit(~/.zprofile)", "Edit(~/.zshenv)", "Edit(~/.zlogin)", "Edit(~/.bashrc)", "Edit(~/.bash_profile)", "Edit(~/.profile)",
+      "Edit(//__HOME__/.zshrc)", "Edit(//__HOME__/.zprofile)", "Edit(//__HOME__/.zshenv)", "Edit(//__HOME__/.zlogin)", "Edit(//__HOME__/.bashrc)", "Edit(//__HOME__/.bash_profile)", "Edit(//__HOME__/.profile)",
+      "Edit(**/.zshrc)", "Edit(**/.zprofile)", "Edit(**/.zshenv)", "Edit(**/.zlogin)", "Edit(**/.bashrc)", "Edit(**/.bash_profile)", "Edit(**/.profile)",
+      "Edit(//**/.ssh/**)", "Edit(//**/authorized_keys)", "Edit(//**/*.pem)", "Edit(//**/id_rsa*)",
+      "Edit(**/.ssh/**)", "Edit(**/authorized_keys)", "Edit(**/*.pem)", "Edit(**/id_rsa*)",
 
       "Bash(cat:*)", "Bash(head:*)", "Bash(tail:*)", "Bash(grep:*)", "Bash(egrep:*)", "Bash(fgrep:*)", "Bash(rg:*)", "Bash(ag:*)",
       "Bash(less:*)", "Bash(more:*)", "Bash(strings:*)", "Bash(od:*)", "Bash(xxd:*)", "Bash(hexdump:*)", "Bash(nl:*)",

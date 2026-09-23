@@ -40,7 +40,7 @@ after(() => {
 
 function request(pathname) {
   const response = { status: 0, headers: {}, body: '' };
-  const req = { url: pathname, method: 'GET', headers: {} };
+  const req = { url: pathname, method: 'GET', headers: { host: 'localhost:4987' } };
   const res = {
     setHeader(name, value) { response.headers[name.toLowerCase()] = value; },
     writeHead(status, headers = {}) {

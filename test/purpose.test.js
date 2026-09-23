@@ -6,12 +6,12 @@ const path = require('path');
 const { subjectForSession } = require('../purpose.js');
 
 test('subjectForSession prefers clients and derives useful repository subjects', () => {
-  assert.equal(subjectForSession({ client: 'Tailor Express', cwd: '/work/tailor-express' }), 'Tailor Express');
+  assert.equal(subjectForSession({ client: 'Acme Co', cwd: '/work/acme-co' }), 'Acme Co');
   assert.equal(subjectForSession({ client: 'Falaq (home)', cwd: os.homedir() }), '');
   assert.equal(subjectForSession({ client: 'Anything', cwd: os.homedir() }), '', 'a client mapped to home is generic');
-  assert.equal(subjectForSession({ cwd: path.join(os.homedir(), 'client-os-wt2', 'roles-fixes') }), 'Client-OS');
-  assert.equal(subjectForSession({ cwd: path.join(os.homedir(), 'client-os-wt2', 'roles-fixes', 'src') }), 'Client-OS');
-  assert.equal(subjectForSession({ cwd: path.join(os.homedir(), 'tailor-express') }), 'Tailor-Express');
+  assert.equal(subjectForSession({ cwd: path.join(os.homedir(), 'acme-app-wt2', 'roles-fixes') }), 'Acme-App');
+  assert.equal(subjectForSession({ cwd: path.join(os.homedir(), 'acme-app-wt2', 'roles-fixes', 'src') }), 'Acme-App');
+  assert.equal(subjectForSession({ cwd: path.join(os.homedir(), 'acme-co') }), 'Acme-Co');
   assert.equal(subjectForSession({ cwd: os.homedir() }), '');
 });
 
@@ -68,15 +68,15 @@ test('heuristic titles retry the local summarizer after the ten-minute throttle'
 });
 
 test('known subjects prefix titles once and normalize the separator', async (t) => {
-  const { titles } = setup(t, async () => 'client-os - Fix DriveSalem roles bug');
-  await titles.refresh([{ sessionId: 's1', client: 'Client-OS', cwd: '/work/client-os', lastPrompt: 'fix roles' }], 1000);
-  assert.deepEqual(titles.get('s1'), { title: 'client-os — Fix DriveSalem roles bug', source: 'local' });
+  const { titles } = setup(t, async () => 'acme-app - Fix Acme roles bug');
+  await titles.refresh([{ sessionId: 's1', client: 'Acme-App', cwd: '/work/acme-app', lastPrompt: 'fix roles' }], 1000);
+  assert.deepEqual(titles.get('s1'), { title: 'acme-app — Fix Acme roles bug', source: 'local' });
 });
 
 test('heuristic fallback is prefixed by a known subject', async (t) => {
   const { titles } = setup(t, async () => { throw new Error('offline'); });
-  await titles.refresh([{ sessionId: 's1', client: 'Client-OS', cwd: '/work/client-os', lastPrompt: 'please fix roles' }], 1000);
-  assert.equal(titles.get('s1').title, 'Client-OS — fix roles');
+  await titles.refresh([{ sessionId: 's1', client: 'Acme-App', cwd: '/work/acme-app', lastPrompt: 'please fix roles' }], 1000);
+  assert.equal(titles.get('s1').title, 'Acme-App — fix roles');
 });
 
 test('legacy cache entries regenerate immediately and are saved as v2', async (t) => {

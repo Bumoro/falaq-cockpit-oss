@@ -17,7 +17,12 @@ test('generated dispatch profile has the exact security-critical deny and scoped
   const deny = new Set(prof.permissions.deny);
   ['Bash(git push:*)', 'Bash(gh pr merge:*)', 'Bash(gh api:*)', 'Bash(vercel:*)',
     'Bash(sudo:*)', 'Bash(curl:*)', 'Bash(git diff:*)'].forEach(rule => assert.ok(deny.has(rule), 'must deny ' + rule));
-  assert.ok(prof.permissions.allow.includes('Write(//Users/o/.cockpit-dispatch/wt-t1/**)'));
+  // Edit(...) only — Write(path)/NotebookEdit(path) are never matched by the file permission checks
+  // and just emit startup warnings; Edit(path) covers every file-editing tool.
+  assert.ok(prof.permissions.allow.includes('Edit(//Users/o/.cockpit-dispatch/wt-t1/**)'));
+  assert.deepStrictEqual(
+    [...prof.permissions.deny, ...prof.permissions.allow].filter(r => /^(Write|NotebookEdit|Glob|Grep)\s*\(/.test(r)),
+    [], 'dispatch profile must carry no inert rule forms');
   assert.ok(prof.permissions.allow.includes('Bash(gh pr create:*)'));
   assert.ok(!prof.permissions.allow.includes('Write'));
   assert.ok(!prof.permissions.allow.includes('Edit'));

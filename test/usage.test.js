@@ -24,6 +24,8 @@ fi
   process.env.COCKPIT_DIR = dir;
   process.env.CK_CCUSAGE_CMD = stub;
   process.env.CK_PLAN_USAGE_FILE = planFile;
+  // Keep block derivation deterministic: never consult the developer's real ~/.codex rollouts.
+  process.env.CK_CODEX_DIR = path.join(dir, 'codex-sessions');
   delete require.cache[require.resolve('../usage.js')];
   return { usage: require('../usage.js'), dir, planFile };
 }
@@ -55,7 +57,7 @@ test('refresh gets Claude week from claude weekly and Codex week from blended we
   });
 });
 
-test('codexUsage filters only gpt-5.6-sol tokens and cost without changing the Claude week', () => {
+test('codexUsage filters Codex tokens and cost without mutating the source week', () => {
   const week = {
     week: '2026-07-13',
     totalTokens: 9999,
@@ -75,10 +77,14 @@ test('codexUsage filters only gpt-5.6-sol tokens and cost without changing the C
   assert.deepEqual(week, before, 'filter does not mutate the source row used by Claude');
 });
 
-test('codexUsage returns null when the row has no exact gpt-5.6-sol breakdown', () => {
+test('codexUsage recognizes current and future Codex model families', () => {
   assert.equal(um.codexUsage(null), null);
   assert.equal(um.codexUsage({ modelBreakdowns: [{ modelName: 'claude-sonnet-5', totalTokens: 10, cost: 1 }] }), null);
-  assert.equal(um.codexUsage({ modelBreakdowns: [{ modelName: 'gpt-5.6-sol-preview', totalTokens: 10, cost: 1 }] }), null);
+  for (const modelName of ['gpt-5.6-sol-preview', 'gpt-6-astra', 'gpt-5.6-terra', 'codex-future', 'o3']) {
+    const row = { modelBreakdowns: [{ modelName, totalTokens: 10, cost: 1 }, { modelName: 'claude-sonnet-5', totalTokens: 20, cost: 2 }] };
+    assert.equal(um.codexUsage(row).totalTokens, 10, modelName);
+    assert.equal(um.claudeUsage(row).totalTokens, 20, modelName);
+  }
 });
 
 test('refresh tolerates a failing ccusage (null block, no throw)', (t, done) => {

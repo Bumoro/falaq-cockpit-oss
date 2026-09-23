@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const { checkCompletion } = require('../dispatch/completion.js');
 
-const task = { id: 't1', repo: 'Bumoro/client-os', branch: 'auto/t1-fix' };
+const task = { id: 't1', repo: 'example/acme-app', branch: 'auto/t1-fix' };
 // fake gh: returns a canned `gh pr list --head` json (out) with meta.ok
 const fakeGh = (out, ok = true) => (args, cb) => cb(out, { ok });
 

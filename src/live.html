@@ -79,6 +79,8 @@
   h2.sec{margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em;color:var(--ink)}
   .section-count{font-size:15px;color:var(--ink-3);font-variant-numeric:tabular-nums}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .provider-group{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin:12px 0 -4px;color:var(--ink-2);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+  .provider-group::after{content:"";height:1px;background:var(--line-2);flex:1}
   .grid.offline,.needs-grid.offline{filter:grayscale(1);opacity:.78}
 
   .card{background:var(--surface);border:1px solid var(--line-2);border-left:4px solid var(--card-accent,transparent);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;min-width:0;transition:transform .18s cubic-bezier(.22,1,.36,1),box-shadow .18s}
@@ -145,6 +147,7 @@
   .system-body{padding:6px 0 20px}.system h3{margin:22px 0 10px;font-size:15px;font-weight:600;color:var(--ink)}
   .update-pill{display:none;margin-left:auto;border-radius:999px;padding:4px 9px;background:var(--blue-bg);color:var(--link);font-size:12px;font-weight:600}.update-pill.show{display:inline-flex}
   .update-line{display:none;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:11px 13px;border:1px solid color-mix(in srgb,var(--blue) 28%,var(--line-2));border-radius:var(--radius-sm);background:var(--blue-bg);color:var(--ink-2);font-size:13px}.update-line.show{display:flex}.update-line .update-copy{flex:1;min-width:210px}.update-line b{color:var(--ink)}.update-line button{border:0;border-radius:999px;padding:6px 11px;background:var(--blue);color:#fff;font-weight:600}.update-line button:disabled{cursor:wait;opacity:.62}
+  .update-line.update-status{background:var(--surface);border-color:var(--line-2)}.update-status .update-meta{display:block;margin-top:2px;color:var(--ink-3);font-size:12px}.update-status .update-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.update-status .update-auto{display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}.update-status .update-auto input{margin:0;accent-color:var(--blue)}
   .update-toast{display:none;position:fixed;right:22px;bottom:22px;z-index:40;max-width:min(360px,calc(100vw - 44px));padding:11px 14px;border-radius:12px;background:var(--ink);color:var(--bg);box-shadow:var(--shadow-lift);font-size:13px;font-weight:600}.update-toast.show{display:block}
   .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:14px}
   .tile{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
@@ -157,7 +160,8 @@
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.32);display:none;align-items:center;justify-content:center;padding:20px;z-index:30}.overlay.open{display:flex}
   .modal{background:var(--surface);border:1px solid var(--line-2);border-radius:18px;padding:24px;width:min(560px,92vw);box-shadow:var(--shadow-lift)}
   .modal h2{margin:0 0 18px;font-size:22px;font-weight:600;letter-spacing:-.02em}.modal label{display:block;font-size:13px;color:var(--ink-2);margin:12px 0 5px}
-  .modal input,.modal textarea,.modal select{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 12px;outline:none}.modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--blue)}
+  .modal .model-row{display:flex;gap:8px;align-items:stretch}.modal .model-row select{flex:1;min-width:0}.modal .model-refresh{flex:none;border:1px solid var(--line);background:transparent;color:inherit;border-radius:10px;padding:0 12px;font:inherit;cursor:pointer}.modal .model-refresh:disabled{opacity:.5;cursor:progress}
+.modal input,.modal textarea,.modal select{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 12px;outline:none}.modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--blue)}
   .modal textarea{min-height:90px;resize:vertical}.modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}.modal .actions .warn{background:var(--blue)!important;color:#fff!important;border-color:var(--blue)}
 
   .panel{position:fixed;top:0;right:0;bottom:0;width:min(720px,94vw);background:var(--bg);border-left:1px solid var(--line);box-shadow:-24px 0 60px -28px rgba(0,0,0,.45);display:none;flex-direction:column;z-index:31}
@@ -229,6 +233,7 @@
 <details class="system" id="systemDetails">
   <summary><span class="chev">▸</span> <span class="nondev-only">Usage &amp; system</span><span class="dev-only">System &amp; usage</span><span class="dev-only" style="color:var(--ink-3);font-weight:400">— telemetry and background activity</span><span class="update-pill" id="updatePill">Update available</span></summary>
   <div class="system-body">
+    <div class="update-line update-status show" id="updateStatus" aria-live="polite"><span class="update-copy"><b>Updates · Loading…</b><span class="update-meta">Last checked —</span></span><span class="update-controls"><label class="update-auto"><input type="checkbox" data-action="update-auto" disabled> Auto-update</label><button data-action="check-update" disabled>Check now</button></span></div>
     <div class="update-line" id="updateLine" aria-live="polite"></div>
     <div class="sub dev-only" id="notifyStatus">Notifier: loading…</div>
     <div class="strip" id="strip"></div>
@@ -267,14 +272,14 @@
   <label>First prompt</label><textarea id="mPrompt" placeholder="What should this chat do first?"></textarea>
   <label>Project directory</label><input id="mCwd" list="cwdList" placeholder="~/your-project"><datalist id="cwdList"></datalist>
   <label>Provider</label>
-  <select id="mProvider"><option value="claude" selected>Claude</option><option value="codex">Codex</option></select>
+  <select id="mProvider"><option value="claude" selected>Claude</option><option value="codex">Codex</option><option value="ollama">Ollama</option><option value="agy">Antigravity</option></select>
   <label>Model</label>
-  <select id="mModel"><option value="fable">Fable 5 (max quality)</option><option value="opus">Opus 4.8</option><option value="sonnet" selected>Sonnet 5</option><option value="haiku">Haiku 4.5 (fast)</option></select>
+  <div class="model-row"><select id="mModel"><option value="sonnet" selected>Sonnet 5</option></select><button type="button" class="model-refresh" data-action="refresh-models" title="Refresh the model list" aria-label="Refresh the model list">↻</button></div>
   <label>Effort</label>
-  <select id="mEffort"><option>low</option><option selected>medium</option><option>high</option><option>xhigh</option><option>max</option></select>
+  <select id="mEffort"><option selected>medium</option></select>
   <label style="display:flex;align-items:center;gap:6px;color:var(--txt);font:inherit;margin:4px 0;"><input type="checkbox" id="mUltra"> Ultracode (multi-agent)</label>
   <label style="display:flex;align-items:center;gap:6px;color:var(--txt);font:inherit;margin:4px 0;"><input type="checkbox" id="mSafe"> Safe mode (non-dev permissions)</label>
-  <div class="actions"><button class="act" data-action="close-modal">Cancel</button><button class="act warn" style="background:var(--blue);color:#04101f" data-action="create-chat">Start chat</button></div>
+  <div class="actions"><button class="act" data-action="close-modal">Cancel</button><button class="act warn" id="mCreate" style="background:var(--blue);color:#04101f" data-action="create-chat">Start chat</button></div>
 </div></div>
 
 <div class="panel" id="panel">
@@ -282,8 +287,8 @@
   <header>
     <span class="title" id="pTitle"></span>
     <button class="act dev-only" id="pView" data-action="toggle-view" title="Switch between the live terminal and the full session log">📜 Full log</button>
-    <select class="dev-only" id="pModel" title="Switch model"><option value="">model…</option><option value="fable">fable</option><option value="opus">opus</option><option value="sonnet">sonnet</option><option value="haiku">haiku</option></select>
-    <select class="dev-only" id="pEffort" title="Switch effort"><option value="">effort…</option><option>low</option><option>medium</option><option>high</option><option>xhigh</option><option>max</option></select>
+    <select class="dev-only" id="pModel" title="Switch model"><option value="">model…</option></select>
+    <select class="dev-only" id="pEffort" title="Switch effort"><option value="">effort…</option></select>
     <button class="act warn" data-action="wrap-save" title="Save session log then you close">Wrap &amp; Save</button>
     <button class="act danger" data-action="kill-chat">Kill</button>
     <button class="act" data-action="close-panel">Close</button>
@@ -303,7 +308,7 @@
 const STALE_MS=10*60*1000;
 const WARN=0.5, AMBER=0.35;               // context thresholds
 const PAGE_STARTED=Date.now();
-let prevNeeds=new Set(), failCount=0, TOKEN='', openChat=null, chatsCache=[], cwds=new Set(), taskCache=[], staleTasksOpen=false, duplicateCache=[], duplicateSessions=[], duplicateNotice=null, duplicateBusy=false, activeOnly=false;
+let prevNeeds=new Set(), failCount=0, TOKEN='', openChat=null, chatsCache=[], panelProviderHint={}, panelSwitchFor=null, cwds=new Set(), taskCache=[], staleTasksOpen=false, duplicateCache=[], duplicateSessions=[], duplicateNotice=null, duplicateBusy=false, activeOnly=false, tickInFlight=false;
 document.getElementById('brandLogo').addEventListener('error',e=>{e.currentTarget.style.display='none';});
 fetch('/api/token').then(r=>r.text()).then(t=>{TOKEN=t;loadAutoWrap();loadDispatch();loadUpdate();}).catch(()=>{});
 function H(){return {'x-cockpit-token':TOKEN,'Content-Type':'application/json'};}
@@ -318,8 +323,8 @@ function cardColor(id){let hash=2166136261;for(const char of String(id||'')){has
 function colorTag(color){return `<span class="color-tag" style="--tag-color:${esc(color.hex)}"><i></i>${esc(color.name)}</span>`;}
 function mins(ts){return Math.max(0,Math.round((Date.now()-ts)/60000));}
 function ago(ts){const elapsed=Math.max(0,Date.now()-Number(ts||Date.now()));if(elapsed<60000)return Math.round(elapsed/1000)+'s ago';if(elapsed<=3600000)return Math.round(elapsed/60000)+'m ago';if(elapsed<=48*3600000)return Math.round(elapsed/3600000)+'h ago';if(elapsed<=14*86400000)return Math.round(elapsed/86400000)+'d ago';return Math.round(elapsed/(7*86400000))+'w ago';}
-function fmtTok(n){ if(n>=1e9)return (n/1e9).toFixed(1)+'B'; if(n>=1e6)return (n/1e6).toFixed(1)+'M'; if(n>=1e3)return (n/1e3).toFixed(0)+'k'; return String(n||0); }
-function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.08;o.start();o.stop(c.currentTime+.25);}catch(e){}}
+function fmtTok(n){n=Number(n);if(!Number.isFinite(n))return '0'; n=Number(n);if(!Number.isFinite(n))return '0';if(n>=1e9)return (n/1e9).toFixed(1)+'B'; if(n>=1e6)return (n/1e6).toFixed(1)+'M'; if(n>=1e3)return (n/1e3).toFixed(0)+'k'; return String(n||0); }
+function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.08;o.addEventListener('ended',()=>{c.close().catch(()=>{});},{once:true});o.start();o.stop(c.currentTime+.25);}catch(e){}}
 function showAutoWrap(c){
   document.getElementById('autoWrapEnabled').checked=!!c.enabled;
   document.getElementById('autoRestartEnabled').checked=!!c.autoRestart;
@@ -347,12 +352,18 @@ function renderDispatch(data){
   <div class="dispatch-scroll"><table class="dispatch-table"><thead><tr><th>id</th><th>phase</th><th>repo</th><th>branch</th><th>PR</th></tr></thead><tbody>${rows}</tbody></table></div>
   <div class="dispatch-summary"><div><h3>Last-night summary</h3><ul>${finishedHtml}</ul></div><div><h3>Dry-run plan</h3><ul>${planHtml}</ul></div></div>`;
 }
-async function loadDispatch(){try{const r=await fetch('/api/dispatch',{headers:H()});if(r.ok)renderDispatch(await r.json());}catch(e){}}
+// Guarded like tick(): it fires on the same 2s cadence, so without an in-flight check a single
+// stalled /api/dispatch queues a new request every tick and a late reply can repaint newer state.
+let dispatchInFlight=false;
+async function loadDispatch(signal){if(dispatchInFlight)return;dispatchInFlight=true;try{const r=await fetch('/api/dispatch',{headers:H(),signal});if(r.ok)renderDispatch(await r.json());}catch(e){}finally{dispatchInFlight=false;}}
 async function setDispatchEnabled(enabled){const r=await fetch('/api/dispatch',{method:'POST',headers:H(),body:JSON.stringify({enabled})});if(r.ok)loadDispatch();}
 async function killDispatch(){if(!confirm('KILL SWITCH: disable dispatch and kill every active dispatched session?'))return;const r=await fetch('/api/dispatch/kill',{method:'POST',headers:H(),body:'{}'});if(r.ok)loadDispatch();}
-let updateState=null,updateApplying=false,updatePollTimer=null;
+let updateState=null,updateApplying=false,updateChecking=false,updatePollTimer=null;
 function behindCount(state){const value=state&&state.behind;if(typeof value==='number')return Math.max(0,Math.floor(value));if(value===true)return 1;return 0;}
 function shortSha(value){return String(value||'').slice(0,7);}
+function updateBlockedReason(reason){
+  return ({'updates-disabled':'Update checks are turned off','dirty-tree':'Local changes are blocking updates','diverged':'This cockpit needs a manual update','no-repo':'No update checkout is configured','update check failed':'The update check failed'})[reason]||'The update check is blocked';
+}
 function showUpdatedToast(state){
   if(!state||!state.lastUpdate||state.lastUpdate.status!=='ok')return;
   const key=String(state.lastUpdate.at)+'-'+String(state.lastUpdate.to||'');
@@ -362,9 +373,15 @@ function showUpdatedToast(state){
 function renderUpdate(state){
   updateState=state||{};showUpdatedToast(updateState);
   const count=behindCount(updateState),updating=updateState.status==='started'||updateApplying,
-    available=count>0&&!updateState.aheadOrDiverged&&!updateState.dirty&&!updateState.blocked&&updateState.checkEnabled!==false&&!updating,
-    pill=document.getElementById('updatePill'),line=document.getElementById('updateLine');
+    available=count>0&&!updateState.aheadOrDiverged&&!updateState.dirty&&!updateState.blocked&&updateState.checkEnabled!==false&&!updating&&!updateChecking,
+    pill=document.getElementById('updatePill'),line=document.getElementById('updateLine'),status=document.getElementById('updateStatus'),
+    reason=updateState.checkEnabled===false?'updates-disabled':updateState.blocked||(
+      updateState.status==='no-repo'?'no-repo':updateState.status==='error'?(updateState.error||'update check failed'):updateState.error||''),
+    checked=updateState.checkedAt?ago(updateState.checkedAt):'never',sha=shortSha(updateState.current),
+    plainStatus=updateChecking?'Checking…':updating?'Updating…':reason?updateBlockedReason(reason):available?'Update available':'Up to date',
+    devStatus=updateChecking?'Checking…':updating?'Updating…':reason?`Blocked — ${String(reason)}`:count>0?`${count} commit${count===1?'':'s'} behind`:'Up to date';
   pill.classList.toggle('show',available);pill.textContent=document.documentElement.classList.contains('dev')?`Update · ${count} behind`:'Update available';
+  status.innerHTML=`<span class="update-copy"><b>Updates · <span class="nondev-only">${esc(plainStatus)}</span><span class="dev-only">${esc(devStatus)}</span></b><span class="update-meta"><span class="nondev-only">Last checked ${esc(checked)}</span><span class="dev-only">Current ${esc(sha||'—')} · checked ${esc(checked)}</span></span></span><span class="update-controls"><label class="update-auto"><input type="checkbox" data-action="update-auto" ${updateState.autoEnabled?'checked':''}> Auto-update</label><button data-action="check-update" ${updateChecking||updating||updateState.checkEnabled===false?'disabled':''}>${updateChecking?'Checking…':'Check now'}</button></span>`;
   if(updating){
     line.className='update-line show';line.innerHTML='<span class="update-copy"><b>Updating the cockpit…</b></span>';
   }else if(available){
@@ -377,6 +394,12 @@ function renderUpdate(state){
   }else{line.className='update-line';line.innerHTML='';}
 }
 async function loadUpdate(){if(!TOKEN)return;try{const r=await fetch('/api/update',{headers:H(),cache:'no-store'});if(r.ok)renderUpdate(await r.json());}catch(e){}}
+async function checkUpdate(){
+  if(updateChecking||updateApplying)return;updateChecking=true;renderUpdate(updateState);
+  try{const r=await fetch('/api/update/check',{method:'POST',headers:H(),body:'{}'}),body=await r.json().catch(()=>({}));updateChecking=false;renderUpdate(r.ok?body:{...updateState,blocked:body.reason||body.blocked||`HTTP ${r.status}`});}
+  catch(e){updateChecking=false;renderUpdate({...updateState,error:'Update check failed'});}
+}
+async function updateUpdateConfig(change){try{const r=await fetch('/api/update/config',{method:'POST',headers:H(),body:JSON.stringify(change)});if(r.ok)renderUpdate(await r.json());else renderUpdate(updateState);}catch(e){renderUpdate(updateState);}}
 function pollForUpdatedServer(){
   let sawOffline=false,attempts=0;clearInterval(updatePollTimer);updatePollTimer=setInterval(async()=>{attempts++;try{const r=await fetch('/api/update',{headers:H(),cache:'no-store'});if(!r.ok)throw new Error();if(sawOffline||attempts>=90){clearInterval(updatePollTimer);location.reload();}}catch(e){sawOffline=true;}if(attempts>=180){clearInterval(updatePollTimer);updateApplying=false;renderUpdate(updateState);}},1000);
 }
@@ -392,16 +415,17 @@ function displayState(s){ if(!s.state)return 'idle';
   // hook's agents[] can get stuck if a SubagentStop is missed, which would suppress "stale" forever.
   if(s.state==='running'&&Date.now()-s.lastActivityAt>STALE_MS&&!(s.liveAgents&&s.liveAgents.length))return 'stale';
   return s.state; }
+function stateClass(state){return ['running','needs_you','idle','stale','ended','dead'].includes(state)?state:'unknown';}
 function setOffline(off){document.getElementById('offlineBanner').style.display=off?'block':'none';document.getElementById('grid').classList.toggle('offline',off);document.getElementById('needsGrid').classList.toggle('offline',off);}
 function ctxClass(pct){ return pct>=WARN?'red':pct>=AMBER?'amber':''; }
-function ctxHtml(c){ if(!c)return ''; const cls=ctxClass(c.pct); const pct=Math.round(c.pct*100); return `<div class="ctx ${cls}"><div class="clab"><span><span class="nondev-only">Memory</span><span class="dev-only">Context used</span></span><span class="dev-only">${pct}% · ${fmtTok(c.tokens)}/${fmtTok(c.limit)}</span></div><div class="bar"><i style="width:${Math.min(100,pct)}%"></i></div></div>`; }
+function ctxHtml(c){ if(!c)return ''; if(!Number.isFinite(c.pct))return `<div class="ctx"><div class="clab"><span><span class="nondev-only">Memory</span><span class="dev-only">Context used</span></span><span>n/a${Number.isFinite(c.limit)?` · ${esc(fmtTok(c.limit))} limit`:''}</span></div></div>`; const cls=ctxClass(c.pct); const pct=Math.round(c.pct*100); return `<div class="ctx ${cls}"><div class="clab"><span><span class="nondev-only">Memory</span><span class="dev-only">Context used</span></span><span class="dev-only">${pct}% · ${esc(fmtTok(c.tokens))}/${esc(fmtTok(c.limit))}</span></div><div class="bar"><i style="width:${Math.min(100,pct)}%"></i></div></div>`; }
 function stateLabel(state){return String(state||'unknown').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
-function plainStateLabel(state){return ({running:'Working',needs_you:'Needs you',idle:'Paused',stale:'Finished',ended:'Finished',dead:'Finished'})[state]||stateLabel(state);}
+function plainStateLabel(state){return ({running:'Working',needs_you:'Needs you',idle:'Ready',stale:'Finished',ended:'Finished',dead:'Finished'})[state]||stateLabel(state);}
 function stateLabelHtml(state){return `<span class="nondev-only">${esc(plainStateLabel(state))}</span><span class="dev-only">${esc(stateLabel(state))}</span>`;}
 function resumeHtml(x){const actions=(x&&x.completedActions)||[], state=x&&x._d||x&&x.state;return `<b>While you were away</b><span>Now: ${stateLabelHtml(state)}</span>${actions.length?`<ul>${actions.map(a=>`<li>${esc(a.name)}${a.label?' · '+esc(a.label):''}</li>`).join('')}</ul>`:'<span> · no completed actions yet</span>'}`;}
-function cardHtml(x){const purpose=x.purposeTitle||(x.chat&&x.chat.title)||x.client||'unknown', color=cardColor(x.chatName||(x.chat&&x.chat.name)||x.sessionId||'');return `
-    <div class="card ${x._d==='needs_you'?'needs':x._d}${x.controlled?' controlled':' resumable'}" tabindex="0" style="--card-accent:${esc(color.hex)}" data-session="${esc(x.sessionId||'')}" data-action="${x.controlled?'open-panel':'toggle-resume'}"${x.controlled?` data-chat="${esc(x.chat.name)}"`:''}>
-      <div class="top"><span class="client">${esc(purpose)}</span><span class="badge provider">${esc(x.provider||'claude')}</span><span class="state pill ${x._d}">${stateLabelHtml(x._d)}</span>${colorTag(color)}${x.controlled?'<span class="badge dev-only">Controlled</span>':''}${x.chat&&x.chat.profile==='nondev'?'<span class="badge dev-only">Safe</span>':''}${(x.provider||'claude')!=='claude'&&x.context&&x.context.pct>=WARN?'<span class="badge dev-only">High context</span>':''}</div>
+function cardHtml(x){const purpose=x.purposeTitle||(x.chat&&x.chat.title)||x.client||'unknown', color=cardColor(x.chatName||(x.chat&&x.chat.name)||x.sessionId||''), state=stateClass(x._d);return `
+    <div class="card ${state==='needs_you'?'needs':state}${x.controlled?' controlled':' resumable'}" tabindex="0" style="--card-accent:${esc(color.hex)}" data-session="${esc(x.sessionId||'')}" data-action="${x.controlled?(x.chat&&x.chat.mediated?'open-chat':'open-panel'):'toggle-resume'}"${x.controlled?` data-chat="${esc(x.chat.name)}"`:''}>
+      <div class="top"><span class="client">${esc(purpose)}</span><span class="badge provider">${esc(providerKey(x))}</span><span class="state pill ${state}">${stateLabelHtml(x._d)}</span>${colorTag(color)}${x.controlled?'<span class="badge dev-only">Controlled</span>':''}${x.chat&&x.chat.profile==='nondev'?'<span class="badge dev-only">Safe</span>':''}${x.chat&&x.chat.promptUndelivered?'<span class="badge" style="background:var(--warn,#c9822b);color:#000" title="The REPL never became ready, so the first prompt was NOT typed. Open the panel and send it by hand.">Prompt not delivered</span>':''}${(x.provider||'claude')!=='claude'&&x.context&&x.context.pct>=WARN?'<span class="badge dev-only">High context</span>':''}</div>
       ${x.client&&x.client!==purpose?`<div class="row dev-only">${esc(x.client)}</div>`:''}
       ${x.needsYou&&x._d==='needs_you'?`<div class="needs-msg">${esc(x.needsYou.message)}</div>`:''}
       ${x.pending&&x.controlled?`<div class="approve">${x.pending.title?`<div class="q">${esc(x.pending.title)}</div>`:''}${x.pending.options.map(o=>`<button class="approve-btn" data-action="answer-card" data-chat="${esc(x.chat.name)}" data-key="${esc(o.key)}">${esc(o.label)}</button>`).join('')}</div>`:''}
@@ -412,6 +436,14 @@ function cardHtml(x){const purpose=x.purposeTitle||(x.chat&&x.chat.title)||x.cli
       ${ctxHtml(x.context)}
       ${x.controlled?'':`<div class="resume-card">${resumeHtml(x)}</div>`}
     </div>`;}
+function providerKey(x){const p=(x&&x.provider)||'claude';return p==='agy'?'antigravity':p;}
+function providerName(p){return ({claude:'Claude',codex:'Codex',ollama:'Ollama',antigravity:'Antigravity'})[p]||p;}
+function groupedCardsHtml(cards){
+  const order=['claude','codex','ollama','antigravity'];
+  const present=order.filter(p=>cards.some(c=>providerKey(c)===p));
+  if(present.length<=1)return cards.map(cardHtml).join('');
+  return present.map(p=>`<div class="provider-group" data-provider="${p}"><span class="badge provider">${providerName(p)}</span></div>`+cards.filter(c=>providerKey(c)===p).map(cardHtml).join('')).join('');
+}
 
 function taskHtml(task){return `<div class="task-card ${task.stale?'stale':''}">
   <div class="task-copy"><div class="task-title">${esc(task.task||'Untitled task')}</div><div class="task-meta">${esc(task.agent||'session task')} · ${esc(task.relativeTime||'')}</div></div>
@@ -478,17 +510,18 @@ async function updateTasks(keys,status){
   if(r.ok)tick();
 }
 
-function tick(){ setClock(); if(TOKEN)loadDispatch(); Promise.all([
-  fetch('/api/sessions').then(r=>r.json()),
-  TOKEN?fetch('/api/chats',{headers:H()}).then(r=>r.json()):Promise.resolve([]),
-  fetch('/api/usage').then(r=>r.json()).catch(()=>({})),
-  fetch('/api/watchers').then(r=>r.json()).catch(()=>[]),
-  fetch('/api/workers').then(r=>r.json()).catch(()=>({codex:[]})),
-  fetch('/api/events').then(r=>r.json()).catch(()=>({tasks:[]})),
-  fetch('/api/duplicates').then(r=>r.json()).catch(()=>({pairs:[]})),
-  fetch('/api/notify').then(r=>r.json()).catch(()=>({enabled:false,idleReason:'unavailable'})),
+function tick(){ setClock(); if(tickInFlight)return; tickInFlight=true; const controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),10000), signal=controller.signal; if(TOKEN)loadDispatch(signal); Promise.all([
+  fetch('/api/sessions',{signal}).then(r=>r.json()),
+  TOKEN?fetch('/api/chats',{headers:H(),signal}).then(r=>r.json()):Promise.resolve([]),
+  fetch('/api/usage',{signal}).then(r=>r.json()).catch(()=>({})),
+  fetch('/api/watchers',{signal}).then(r=>r.json()).catch(()=>[]),
+  fetch('/api/workers',{signal}).then(r=>r.json()).catch(()=>({codex:[]})),
+  fetch('/api/events',{signal}).then(r=>r.json()).catch(()=>({tasks:[]})),
+  fetch('/api/duplicates',{signal}).then(r=>r.json()).catch(()=>({pairs:[]})),
+  fetch('/api/notify',{signal}).then(r=>r.json()).catch(()=>({enabled:false,idleReason:'unavailable'})),
 ]).then(([sessions,chats,usage,watchers,workers,eventData,duplicates,notify])=>{
   failCount=0; setOffline(false); chatsCache=chats;
+  if(openChat&&panelSwitchFor!==openChat+'|'+openChatProvider())syncPanelModelSwitch(); // provider now known/changed
   renderTasks(eventData&&eventData.tasks);
   renderDuplicates(duplicates,sessions);
   renderNeedsStrip(sessions,eventData&&eventData.tasks);
@@ -496,7 +529,7 @@ function tick(){ setClock(); if(TOKEN)loadDispatch(); Promise.all([
   renderStrip(sessions,chats,usage);
   renderNotifyStatus(notify);
   renderWatchers(watchers);
-  sessions.forEach(s=>{if(s.cwd)cwds.add(s.cwd);});
+  cwds=new Set(sessions.map(s=>s.cwd).filter(Boolean));
   document.getElementById('cwdList').innerHTML=[...cwds].map(c=>`<option value="${esc(c)}">`).join('');
   const claimed=new Set(), cards=[];
   for(const c of chats){
@@ -507,8 +540,11 @@ function tick(){ setClock(); if(TOKEN)loadDispatch(); Promise.all([
     const named=sessions.filter(s=>s.chatName&&s.chatName===c.name&&!claimed.has(s.sessionId))
       .sort((a,b)=>((a.state==='ended')-(b.state==='ended'))||((b.lastActivityAt||0)-(a.lastActivityAt||0)));
     const codexMatch=c.provider==='codex'&&sessions.find(s=>!s.chatName&&s.provider==='codex'&&s.cwd===c.cwd&&!claimed.has(s.sessionId));
-    const legacyMatch=sessions.find(s=>!s.chatName&&s.cwd===c.cwd&&Math.abs((s.startedAt||0)-c.createdAt)<180000&&!claimed.has(s.sessionId));
-    const m=named[0]||codexMatch||legacyMatch;
+    const ollamaMatch=c.provider==='ollama'&&c.alive&&sessions.find(s=>s.provider==='ollama'&&s.context&&s.context.model===c.model&&!claimed.has(s.sessionId));
+    const unclaimedAgy=sessions.filter(s=>s.provider==='antigravity'&&!claimed.has(s.sessionId));
+    const agyMatch=c.provider==='agy'&&(unclaimedAgy.find(s=>s.cwd&&(s.cwd===c.cwd||s.cwd===(c.requestedCwd||c.cwd)))||(c.alive&&unclaimedAgy.length===1&&!chats.some(other=>other!==c&&other.provider==='agy'&&other.alive)&&unclaimedAgy[0]));
+    const legacyMatch=(!c.provider||c.provider==='claude')&&sessions.find(s=>!s.chatName&&(s.provider||'claude')==='claude'&&s.cwd===c.cwd&&Math.abs((s.startedAt||0)-c.createdAt)<180000&&!claimed.has(s.sessionId));
+    const m=named[0]||codexMatch||ollamaMatch||agyMatch||legacyMatch;
     if(m)claimed.add(m.sessionId); const s=m||{};
     cards.push({controlled:true,chat:c,sessionId:s.sessionId,provider:s.provider||c.provider||'claude',client:c.title,purposeTitle:s.purposeTitle,purposeSource:s.purposeSource,state:c.alive?(s.state||'running'):'dead',needsYou:s.needsYou,pending:s.pending,lastPrompt:s.lastPrompt,lastTool:s.lastTool,subagents:s.subagents,agents:s.agents,liveAgents:s.liveAgents,lastActivityAt:s.lastActivityAt||c.createdAt,model:c.model,cwd:c.requestedCwd||c.cwd,context:s.context,transcriptPath:s.transcriptPath,completedActions:s.completedActions||[]});
   }
@@ -531,12 +567,12 @@ function tick(){ setClock(); if(TOKEN)loadDispatch(); Promise.all([
   const needsCards=cards.filter(x=>x._d==='needs_you'), otherCards=cards.filter(x=>x._d!=='needs_you');
   document.getElementById('heroTitle').textContent=n?`${n} session${n===1?' needs':'s need'} you`:'All clear';
   document.getElementById('heroLede').textContent=n?`${otherCards.length} more session${otherCards.length===1?' is':'s are'} running on their own.`:'No sessions need a decision right now.';
-  document.getElementById('needsGrid').innerHTML=needsCards.map(cardHtml).join('');
+  document.getElementById('needsGrid').innerHTML=groupedCardsHtml(needsCards);
   document.getElementById('runningCount').textContent=`${otherCards.length} session${otherCards.length===1?'':'s'}`;
-  document.getElementById('grid').innerHTML=otherCards.map(cardHtml).join('');
+  document.getElementById('grid').innerHTML=groupedCardsHtml(otherCards);
   document.getElementById('grid').classList.toggle('active-only',activeOnly);
   document.getElementById('needsGrid').classList.toggle('active-only',activeOnly);
-}).catch(()=>{ failCount++; if(failCount>=3)setOffline(true); });}
+}).catch(()=>{ failCount++; if(failCount>=3)setOffline(true); }).finally(()=>{clearTimeout(timeout);tickInFlight=false;});}
 
 function renderStrip(sessions,chats,usage){
   const b=usage&&usage.block, w=usage&&usage.week;
@@ -550,9 +586,9 @@ function renderStrip(sessions,chats,usage){
   const tiles=[], secondary=[];
   const hasClaudeBlock=usage&&Object.prototype.hasOwnProperty.call(usage,'claudeBlock');
   const claudeBlock=hasClaudeBlock?usage.claudeBlock:b;
-  secondary.push(`<div class="tile"><span class="cap">claude</span><div class="lab">5-Hour Block</div><div class="big">${claudeBlock?fmtTok(claudeBlock.totalTokens):'—'}</div><div class="sub">${claudeBlock?('$'+(claudeBlock.costUSD||0).toFixed(2)+' · '+resets):'no Claude activity'}</div><div class="meter"><i style="width:${Math.round(blockPct*100)}%;background:${blockPct>=.85?'var(--red)':'var(--blue)'}"></i></div></div>`);
+  secondary.push(`<div class="tile"><span class="cap">claude</span><div class="lab">5-Hour Block</div><div class="big">${claudeBlock?esc(fmtTok(claudeBlock.totalTokens)):'—'}</div><div class="sub">${claudeBlock?('$'+(claudeBlock.costUSD||0).toFixed(2)+' · '+resets):'no Claude activity'}</div><div class="meter"><i style="width:${Math.round(blockPct*100)}%;background:${blockPct>=.85?'var(--red)':'var(--blue)'}"></i></div></div>`);
   const cb=usage&&usage.codexBlock;
-  let codexSub='n/a';
+  let codexSub='no Codex activity';
   if(cb){
     let projected=null,burn=null;
     if(cb.startTime&&cb.endTime){
@@ -560,9 +596,10 @@ function renderStrip(sessions,chats,usage){
       const elapsed=Math.max(1,(now-start)/60000),remaining=Math.max(0,(end-now)/60000);
       if(Number.isFinite(elapsed)&&Number.isFinite(remaining)){burn=cb.totalTokens/elapsed;projected=cb.totalTokens+burn*remaining;}
     }
-    codexSub='$'+(cb.costUSD||0).toFixed(2)+(burn==null?'':` · ${fmtTok(Math.round(burn))}/min · projects ${fmtTok(Math.round(projected))}`);
+    const cost=Number.isFinite(cb.costUSD)?'$'+cb.costUSD.toFixed(2)+' · ':'';
+    codexSub=cost+(burn==null?resets:`${esc(fmtTok(Math.round(burn)))}/min · projects ${esc(fmtTok(Math.round(projected)))} · ${resets}`);
   }
-  secondary.push(`<div class="tile"><span class="cap">codex</span><div class="lab">5-Hour Block</div><div class="big">${cb?fmtTok(cb.totalTokens):'—'}</div><div class="sub">${codexSub}</div><div class="meter"><i style="width:${Math.round(blockPct*100)}%;background:${blockPct>=.85?'var(--red)':'var(--blue)'}"></i></div></div>`);
+  secondary.push(`<div class="tile"><span class="cap">codex</span><div class="lab">5-Hour Block</div><div class="big">${cb?esc(fmtTok(cb.totalTokens)):'—'}</div><div class="sub">${codexSub}</div><div class="meter"><i style="width:${Math.round(blockPct*100)}%;background:${blockPct>=.85?'var(--red)':'var(--blue)'}"></i></div></div>`);
   // The tile DECISION (real / est / volume — incl. the week-boundary gate) is computed + unit-tested
   // server-side in usage.weekTileMode; the browser only formats the result.
   const wt=(usage&&usage.weekTile)||{mode:'volume'};
@@ -582,13 +619,13 @@ function renderStrip(sessions,chats,usage){
     weekMeterPct=Math.max(0,Math.min(100,wt.pct));
     weekMeterColor='var(--ink-3)';
   }else{
-    weekBig=w?fmtTok(w.totalTokens):'—';
+    weekBig=w?esc(fmtTok(w.totalTokens)):'—';
     weekSub=w?('$'+wCost.toFixed(2)+' · limit % unavailable — sync via Claude.app'):'—';
     weekMeterPct=null;
   }
   const projection=usage&&usage.weekProjection;
   if(projection&&projection.cap){
-    weekBig=fmtTok(projection.tokens)+' / '+fmtTok(projection.cap);
+    weekBig=esc(fmtTok(projection.tokens))+' / '+esc(fmtTok(projection.cap));
     weekSub=projection.pct+'% · '+(projection.exhaustionDay==='limit reached'?'limit reached':projection.exhaustionDay?'at this pace: '+projection.exhaustionDay:'at this pace: within weekly limit');
     weekMeterPct=Math.max(0,Math.min(100,projection.pct));
     weekMeterColor=projection.pct>=85?'var(--red)':(projection.pct>=70?'var(--amber)':'var(--blue)');
@@ -597,7 +634,11 @@ function renderStrip(sessions,chats,usage){
   const weekFramingHtml=usage&&usage.framing?`<div class="sub">${esc(usage.framing)}</div>`:'';
   tiles.push(`<div class="tile"><span class="cap">claude</span><div class="lab">This Week</div><div class="big">${weekBig}</div><div class="sub">${weekSub}</div>${weekMeterHtml}${weekFramingHtml}</div>`);
   const cw=usage&&usage.codexWeek;
-  tiles.push(`<div class="tile"><span class="cap">codex</span><div class="lab">This Week</div><div class="big">${cw?fmtTok(cw.totalTokens):'—'}</div><div class="sub">${cw?'$'+(cw.totalCost||cw.costUSD||0).toFixed(2):'no Codex activity'}</div></div>`);
+  tiles.push(`<div class="tile"><span class="cap">codex</span><div class="lab">This Week</div><div class="big">${cw?esc(fmtTok(cw.totalTokens)):'—'}</div><div class="sub">${cw?'$'+(cw.totalCost||cw.costUSD||0).toFixed(2):'no Codex activity'}</div></div>`);
+  const ollamaWeek=usage&&usage.ollamaWeek;
+  if(ollamaWeek)tiles.push(`<div class="tile"><span class="cap">ollama</span><div class="lab">This Week</div><div class="big">${esc(fmtTok(ollamaWeek.totalTokens))}</div><div class="sub">tokens</div></div>`);
+  const ollamaBlock=usage&&usage.ollamaBlock;
+  if(ollamaBlock)secondary.push(`<div class="tile"><span class="cap">ollama</span><div class="lab">5-Hour Block</div><div class="big">${esc(fmtTok(ollamaBlock.totalTokens))}</div><div class="sub">tokens · ${resets}</div></div>`);
   tiles.push(...secondary);
   tiles.push(`<button class="tile count${activeOnly?' active':''}" data-action="toggle-active-filter" aria-pressed="${activeOnly}"><div class="lab">Running</div><div class="big">${running}</div><div class="sub">${activeOnly?'showing active only':controlled+' controlled'}</div></button>`);
   tiles.push(`<div class="tile count ${needs?'alarm':''}"><div class="lab">Needs You</div><div class="big">${needs}</div><div class="sub">${needs?'action required':'all clear'}</div></div>`);
@@ -644,63 +685,137 @@ function setClock(){ const d=new Date(); document.getElementById('clock').textCo
 
 /* modal */
 let newChatDefaults=null;
-const claudeModelOptions='<option value="fable">Fable 5 (max quality)</option><option value="opus">Opus 4.8</option><option value="sonnet">Sonnet 5</option><option value="haiku">Haiku 4.5 (fast)</option>';
-const codexModelOptions='<option value="gpt-5.6-sol">GPT-5.6 Sol</option>';
-const claudeEffortOptions='<option>low</option><option selected>medium</option><option>high</option><option>xhigh</option><option>max</option>';
-const codexEffortOptions='<option>minimal</option><option>low</option><option selected>medium</option><option>high</option>';
+/* Model catalog — GET /api/models (server-side registry, refreshed in the background). The static
+   FALLBACK_MODEL_CATALOG below is used ONLY when that fetch fails; every catalog string reaches the
+   DOM through esc(). An empty efforts list means effort does not apply (agy/ollama): the select shows
+   a disabled "n/a" and sends 'medium', which the server ignores for those providers. */
+const FALLBACK_MODEL_CATALOG={
+  claude:{models:[{id:'fable',label:'Fable 5 (max quality)'},{id:'opus',label:'Opus 5'},{id:'sonnet',label:'Sonnet 5'},{id:'haiku',label:'Haiku 4.5 (fast)'}],default:'sonnet',efforts:['low','medium','high','xhigh','max']},
+  codex:{models:[{id:'gpt-6-astra',label:'GPT-6 Astra'}],default:'gpt-6-astra',efforts:['low','medium','high','xhigh','max','ultra']},
+  ollama:{models:[{id:'qwen2.5-coder:32b',label:'Qwen 2.5 Coder 32B'},{id:'qwen2.5-coder:7b',label:'Qwen 2.5 Coder 7B'}],default:'qwen2.5-coder:32b',efforts:[]},
+  agy:{models:[{id:'antigravity',label:"Default (agy's choice)"}],default:'antigravity',efforts:[]}
+};
+let modelCatalog=null,modelsLoading=null;
+function providerCatalog(p){const c=modelCatalog&&modelCatalog[p];return c&&Array.isArray(c.models)&&c.models.some(m=>m&&m.id)?c:(FALLBACK_MODEL_CATALOG[p]||FALLBACK_MODEL_CATALOG.claude);}
+function catalogModel(p,id){return providerCatalog(p).models.find(m=>m&&m.id===id)||null;}
+function modelEfforts(p,id){if(p==='ollama'||p==='agy')return [];const m=catalogModel(p,id),list=m&&Array.isArray(m.efforts)&&m.efforts.length?m.efforts:providerCatalog(p).efforts;return Array.isArray(list)?list.filter(e=>typeof e==='string'&&e):[];}
+function modelGroupLabel(g){return g==='main'?'Current models':g==='overflow'?'More models':String(g).charAt(0).toUpperCase()+String(g).slice(1);}
+function modelOptionsHtml(p){
+  const order=[],by=new Map();
+  for(const m of providerCatalog(p).models){if(!m||!m.id)continue;const g=m.group?String(m.group):'';if(!by.has(g)){by.set(g,[]);order.push(g);}by.get(g).push(m);}
+  const opt=m=>`<option value="${esc(m.id)}">${esc(m.label||m.id)}</option>`,grouped=order.length>1;
+  return order.map(g=>g&&grouped?`<optgroup label="${esc(modelGroupLabel(g))}">${by.get(g).map(opt).join('')}</optgroup>`:by.get(g).map(opt).join('')).join('');
+}
+// Never leaves the select empty: wanted (e.g. saved default) if listed, else catalog default, else first.
+function pickModel(p,wanted){const c=providerCatalog(p),ids=c.models.filter(m=>m&&m.id).map(m=>m.id);return ids.includes(wanted)?wanted:ids.includes(c.default)?c.default:ids[0];}
+function catalogTitle(p){const live=!!(modelCatalog&&modelCatalog[p]&&modelCatalog[p]===providerCatalog(p)),c=providerCatalog(p),when=c.asOf?new Date(c.asOf):null;return 'Model list: '+(live?(c.source||'live'):'built-in fallback (catalog unavailable)')+(when&&!isNaN(when)?' · as of '+when.toLocaleString():'');}
+function setModelEfforts(select,provider,model,wanted){
+  if(!select)return;
+  const list=modelEfforts(provider,model);
+  if(!list.length){select.innerHTML='<option value="medium">n/a</option>';select.value='medium';select.disabled=true;select.title='Effort does not apply to this model';return;}
+  const prev=select.disabled?'':select.value,m=catalogModel(provider,model),c=providerCatalog(provider);
+  select.disabled=false;select.title='';
+  select.innerHTML=list.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+  select.value=[wanted,prev,m&&(m.defaultEffort||m.default_reasoning_level),c.defaultEffort,'medium'].find(e=>e&&list.includes(e))||list[0];
+}
+function loadModels(){
+  if(modelsLoading)return modelsLoading;
+  modelsLoading=fetch('/api/models',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(c=>{if(c&&typeof c==='object'&&!Array.isArray(c)){modelCatalog=c;onModelsLoaded();}}).catch(()=>{}).finally(()=>{modelsLoading=null;});
+  return modelsLoading;
+}
+// ↻: ask the server to re-discover (non-blocking there), then re-read the catalog once it has had time.
+function refreshModels(btn){if(btn)btn.disabled=true;fetch('/api/models?refresh=1',{cache:'no-store'}).catch(()=>{}).finally(()=>setTimeout(()=>loadModels().finally(()=>{if(btn)btn.disabled=false;}),3000));}
 function setNewChatProvider(provider,model){
-  const isCodex=provider==='codex', select=document.getElementById('mModel'), effort=document.getElementById('mEffort');
-  document.getElementById('mProvider').value=isCodex?'codex':'claude';
-  select.innerHTML=isCodex?codexModelOptions:claudeModelOptions;
-  select.value=model||(isCodex?'gpt-5.6-sol':'sonnet');
-  effort.innerHTML=isCodex?codexEffortOptions:claudeEffortOptions;
+  const p=['codex','ollama','agy'].includes(provider)?provider:'claude',isCodex=p==='codex',isOllama=p==='ollama',isAgy=p==='agy',select=document.getElementById('mModel'),effort=document.getElementById('mEffort');
+  document.getElementById('mProvider').value=p;
+  select.innerHTML=modelOptionsHtml(p);
+  select.value=pickModel(p,model);
+  select.title=catalogTitle(p);
+  setModelEfforts(effort,p,select.value);
   const safe=document.getElementById('mSafe');
-  if(isCodex)safe.checked=false;
-  safe.disabled=isCodex;
+  if(isCodex||isOllama||isAgy)safe.checked=false;
+  safe.disabled=isCodex||isOllama||isAgy;
 }
 function applyNewChatDefaults(){
   const d=newChatDefaults||{};
   setNewChatProvider(d.provider||'claude',d.model);
-  const effort=document.getElementById('mEffort'), wanted=d.effort||'medium';
-  effort.value=[...effort.options].some(o=>o.value===wanted)?wanted:'medium';
+  setModelEfforts(document.getElementById('mEffort'),document.getElementById('mProvider').value,document.getElementById('mModel').value,d.effort||'medium');
   document.getElementById('mUltra').checked=!!d.ultracode;
   const safe=document.getElementById('mSafe'); if(safe)safe.checked=false; // never sticky across opens; Safe mode is a deliberate per-chat choice
 }
-document.getElementById('mProvider').addEventListener('change',e=>setNewChatProvider(e.target.value));
+let newChatTouched=false; // user changed a pick since the modal opened
+function modalOpen(){return document.getElementById('modalOverlay').classList.contains('open');}
+// Re-render with fresh catalog data; an open modal keeps the user's current picks when still listed.
+// While open and untouched, the saved new-chat default wins once the fresh catalog lists it (it may
+// have been missing from the fallback list the modal opened with); otherwise keep the current picks.
+function onModelsLoaded(){
+  if(modalOpen()){
+    const p=document.getElementById('mProvider').value,d=newChatDefaults||{},effort=document.getElementById('mEffort').value;
+    const useSaved=!newChatTouched&&!!d.model&&(d.provider||'claude')===p&&providerCatalog(p).models.some(m=>m&&m.id===d.model);
+    setNewChatProvider(p,useSaved?d.model:document.getElementById('mModel').value);
+    setModelEfforts(document.getElementById('mEffort'),p,document.getElementById('mModel').value,useSaved&&d.effort?d.effort:effort);
+  }
+  else applyNewChatDefaults();
+  if(openChat)syncPanelModelSwitch();
+}
+document.getElementById('mProvider').addEventListener('change',e=>{newChatTouched=true;setNewChatProvider(e.target.value);});
+document.getElementById('mModel').addEventListener('change',e=>{newChatTouched=true;setModelEfforts(document.getElementById('mEffort'),document.getElementById('mProvider').value,e.target.value);});
+document.getElementById('mEffort').addEventListener('change',()=>{newChatTouched=true;});
+applyNewChatDefaults();
+loadModels();
+setInterval(()=>{if(document.visibilityState==='visible')loadModels();},300000);
 fetch('/api/new-chat-defaults').then(r=>r.json()).then(d=>{newChatDefaults=d;applyNewChatDefaults();}).catch(()=>{});
-function openModal(){applyNewChatDefaults();document.getElementById('modalOverlay').classList.add('open');}
-function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+let creatingChat=false;
+function openModal(){newChatTouched=false;applyNewChatDefaults();document.getElementById('modalOverlay').classList.add('open');loadModels();}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  const button=document.getElementById('mCreate'); button.disabled=false; button.textContent='Start chat';
+}
 async function createChat(){
-  const body={title:document.getElementById('mTitle').value.trim()||undefined,prompt:document.getElementById('mPrompt').value.trim(),cwd:document.getElementById('mCwd').value.trim()||undefined,provider:document.getElementById('mProvider').value,model:document.getElementById('mModel').value,effort:document.getElementById('mEffort').value,ultracode:document.getElementById('mUltra').checked,profile:document.getElementById('mSafe').checked?'nondev':'dev'};
-  const r=await fetch('/api/chats',{method:'POST',headers:H(),body:JSON.stringify(body)});
-  if(!r.ok){let m=r.status;try{m=(await r.json()).error;}catch(e){}alert('Failed: '+m);return;}
-  const chat=await r.json(); closeModal(); openPanel(chat.name); tick();
+  if(creatingChat)return;
+  creatingChat=true;
+  const button=document.getElementById('mCreate'); button.disabled=true; button.textContent='Creating…';
+  try{
+    const body={title:document.getElementById('mTitle').value.trim()||undefined,prompt:document.getElementById('mPrompt').value.trim(),cwd:document.getElementById('mCwd').value.trim()||undefined,provider:document.getElementById('mProvider').value,model:document.getElementById('mModel').value,effort:document.getElementById('mEffort').value,ultracode:document.getElementById('mUltra').checked,profile:document.getElementById('mSafe').checked?'nondev':'dev'};
+    const r=await fetch('/api/chats',{method:'POST',headers:H(),body:JSON.stringify(body)});
+    if(!r.ok){let m=r.status;try{m=(await r.json()).error;}catch(e){}alert('Failed: '+m);return;}
+    const chat=await r.json(); closeModal(); if(chat.mediated)location='/chat?name='+encodeURIComponent(chat.name);else{openPanel(chat.name,chat.provider||body.provider);tick();}
+  }finally{
+    creatingChat=false;
+    button.disabled=false;
+    button.textContent='Start chat';
+  }
 }
 /* panel */
-let screenTimer=null, panelMode='live', lastTx=null;
-function openPanel(name){ openChat=name; panelMode='live'; lastTx=null; lastScreen=null; const c=chatsCache.find(x=>x.name===name), card=lastCards&&lastCards.find(x=>x.controlled&&x.chat.name===name), purpose=card&&(card.purposeTitle||card.chat.title); document.getElementById('pTitle').textContent=purpose||(c?c.title:name); document.title=(purpose||(c&&c.title)||name)+' · Falaq'; document.getElementById('pAttach').textContent='tmux attach -t '+name; const p=document.getElementById('panel'); restorePanelWidth(); p.classList.remove('full'); p.classList.add('open'); setViewBtn(); refreshPanel(); clearInterval(screenTimer); screenTimer=setInterval(refreshPanel,1000); }
-function closePanel(){ openChat=null; panelMode='live'; const p=document.getElementById('panel'); p.classList.remove('open','full'); clearInterval(screenTimer); }
+let screenTimer=null, panelMode='live', lastTx=null, panelRequest=null;
+function cancelPanelRefresh(){if(panelRequest)panelRequest.abort();panelRequest=null;}
+function openPanel(name,provider){ cancelPanelRefresh(); openChat=name; if(provider)panelProviderHint[name]=provider; panelMode='live'; lastTx=null; lastScreen=null; const c=chatsCache.find(x=>x.name===name), card=lastCards&&lastCards.find(x=>x.controlled&&x.chat.name===name), purpose=card&&(card.purposeTitle||card.chat.title); document.getElementById('pTitle').textContent=purpose||(c?c.title:name); document.title=(purpose||(c&&c.title)||name)+' · Falaq'; document.getElementById('pAttach').textContent='tmux attach -t '+name; const p=document.getElementById('panel'); restorePanelWidth(); p.classList.remove('full'); p.classList.add('open'); setViewBtn(); syncPanelModelSwitch(); refreshPanel(); clearInterval(screenTimer); screenTimer=setInterval(refreshPanel,1000); }
+function closePanel(){ cancelPanelRefresh(); openChat=null; panelMode='live'; const p=document.getElementById('panel'); p.classList.remove('open','full'); clearInterval(screenTimer); }
 function setViewBtn(){ const b=document.getElementById('pView'); if(!b)return; const full=panelMode==='full'; b.textContent=full?'🖥 Live':'📜 Full log'; b.classList.toggle('on',full); }
 function toggleView(){ if(panelMode!=='full'&&!document.documentElement.classList.contains('dev'))return; panelMode=panelMode==='full'?'live':'full'; lastTx=null; document.getElementById('panel').classList.toggle('full',panelMode==='full'); setViewBtn(); refreshPanel(); }
 // Replace <pre> content while keeping the reader's place: jump to bottom only if they were pinned there,
 // otherwise hold the previous scroll position (setting textContent would reset it to 0).
 function applyPre(el,text){ if(!el)return; if(el.clientHeight===0){el.textContent=text;return;} /* hidden (mode switch): set, don't compute scroll on a 0-height node */ const atBottom=el.scrollTop+el.clientHeight>=el.scrollHeight-40; const prev=el.scrollTop; el.textContent=text; el.scrollTop=atBottom?el.scrollHeight:prev; }
-function refreshPanel(){ if(!openChat)return; if(panelMode==='full')refreshTranscript(); else refreshScreen();
-  const card=lastCards&&lastCards.find(x=>x.controlled&&x.chat.name===openChat);
-  document.getElementById('pCtx').innerHTML=card&&card.context?ctxHtml(card.context):'';
-  document.getElementById('pResume').innerHTML=resumeHtml(card||{});
+async function refreshPanel(){ if(!openChat||panelRequest)return; const chat=openChat, controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),10000); panelRequest=controller;
+  try{if(panelMode==='full')await refreshTranscript(controller.signal,chat); else await refreshScreen(controller.signal,chat);
+    if(openChat!==chat)return;
+    const card=lastCards&&lastCards.find(x=>x.controlled&&x.chat.name===chat);
+    document.getElementById('pCtx').innerHTML=card&&card.context?ctxHtml(card.context):'';
+    document.getElementById('pResume').innerHTML=resumeHtml(card||{});
+  }finally{clearTimeout(timeout);if(panelRequest===controller)panelRequest=null;}
 }
 let lastScreen=null;
 function caretNode(){ const c=document.createElement('span'); c.className='tcaret'; c.setAttribute('aria-hidden','true'); return c; }
 // True while the user has a live (non-collapsed) selection inside #screen — pause repaint so highlight+copy survives.
 function screenSelecting(){ const s=window.getSelection&&window.getSelection(); if(!s||s.isCollapsed||!s.rangeCount)return false; const el=document.getElementById('screen'); return !!(el&&el.contains(s.getRangeAt(0).commonAncestorContainer)); }
-async function refreshScreen(){ if(!openChat)return;
+async function refreshScreen(signal,chat=openChat){ if(!chat)return;
   if(screenSelecting())return; // don't wipe an in-progress selection (select-to-copy)
   try{
     const [raw,cur]=await Promise.all([
-      fetch(`/api/chats/${openChat}/screen`,{headers:H()}).then(r=>r.text()),
-      fetch(`/api/chats/${openChat}/cursor`,{headers:H()}).then(r=>r.text()).catch(()=>'')
+      fetch(`/api/chats/${chat}/screen`,{headers:H(),signal}).then(r=>r.text()),
+      fetch(`/api/chats/${chat}/cursor`,{headers:H(),signal}).then(r=>r.text()).catch(()=>'')
     ]);
+    if(openChat!==chat)return;
     const clean=raw.replace(/\x1b\[[0-9;]*m/g,'');           // strip SGR colors; KEEP rows (cursor math needs them)
     const m=/^(\d+)\s+(\d+)\s+(\d+)/.exec(cur||'');           // "cy cx paneH"
     const cy=m?+m[1]:-1, cx=m?+m[2]:-1, paneH=m?+m[3]:0;
@@ -734,11 +849,12 @@ function renderScreen(el,text,cy,cx,paneH){ if(!el)return;
   build();
   el.scrollTop=atBottom?el.scrollHeight:prev;
 }
-async function refreshTranscript(){ if(!openChat)return; const el=document.getElementById('transcript');
-  const card=lastCards&&lastCards.find(x=>x.controlled&&x.chat.name===openChat);
+async function refreshTranscript(signal,chat=openChat){ if(!chat)return; const el=document.getElementById('transcript');
+  const card=lastCards&&lastCards.find(x=>x.controlled&&x.chat.name===chat);
   const tp=card&&card.transcriptPath;
   if(!tp){ el.innerHTML='<span class="empty2">Not linked to a monitored session yet — it links automatically once the session hook fires (restart the chat if it predates this update).</span>'; lastTx=null; return; }
-  try{ const t=await (await fetch(`/api/chats/${openChat}/transcript?path=${encodeURIComponent(tp)}`,{headers:H()})).text();
+  try{ const t=await (await fetch(`/api/chats/${chat}/transcript?path=${encodeURIComponent(tp)}`,{headers:H(),signal})).text();
+    if(openChat!==chat)return;
     const body=t||'(no readable turns yet)'; if(body===lastTx)return; const first=(lastTx===null); lastTx=body; applyPre(el,body);
     if(first)requestAnimationFrame(()=>{el.scrollTop=el.scrollHeight;}); }catch(e){} // on open, land on the most-recent activity (deterministic, past any layout race)
 }
@@ -753,8 +869,21 @@ async function wrapSave(){ if(!openChat||!confirm('Inject the session-close prot
 }
 async function killChat(){ if(!openChat||!confirm('Kill this chat session?'))return; await fetch(`/api/chats/${openChat}`,{method:'DELETE',headers:H()}); closePanel(); tick(); }
 function copyAttach(){ navigator.clipboard.writeText('tmux attach -t '+openChat); }
-document.getElementById('pModel').addEventListener('change',async e=>{ if(!e.target.value||!openChat)return; await fetch(`/api/chats/${openChat}/input`,{method:'POST',headers:H(),body:JSON.stringify({text:'/model '+e.target.value})}); e.target.value=''; setTimeout(refreshScreen,500); });
-document.getElementById('pEffort').addEventListener('change',async e=>{ if(!e.target.value||!openChat)return; await fetch(`/api/chats/${openChat}/input`,{method:'POST',headers:H(),body:JSON.stringify({text:'/effort '+e.target.value})}); e.target.value=''; setTimeout(refreshScreen,500); });
+// Per-chat model/effort switch types /model|/effort into the TUI — Claude-only, so it is hidden for
+// codex/ollama/agy chats (their TUIs don't take these commands). Options come from the catalog.
+// A just-created chat is not in chatsCache until the next tick(): use the provider createChat passed to
+// openPanel, and treat a still-unknown provider as NOT claude (switch hidden) rather than guessing.
+function openChatProvider(){const c=chatsCache.find(x=>x.name===openChat);return c?(c.provider||'claude'):(panelProviderHint[openChat]||null);}
+function syncPanelModelSwitch(){
+  const m=document.getElementById('pModel'),e=document.getElementById('pEffort'),c=chatsCache.find(x=>x.name===openChat),show=openChatProvider()==='claude';
+  panelSwitchFor=openChat+'|'+openChatProvider();
+  m.style.display=show?'':'none'; e.style.display=show?'':'none';
+  if(!show)return;
+  m.innerHTML='<option value="">model…</option>'+modelOptionsHtml('claude'); m.value=''; m.title='Switch model · '+catalogTitle('claude');
+  e.innerHTML='<option value="">effort…</option>'+modelEfforts('claude',c&&c.model).map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''); e.value='';
+}
+document.getElementById('pModel').addEventListener('change',async e=>{ if(!e.target.value||!openChat||openChatProvider()!=='claude'||!catalogModel('claude',e.target.value))return; await fetch(`/api/chats/${openChat}/input`,{method:'POST',headers:H(),body:JSON.stringify({text:'/model '+e.target.value})}); e.target.value=''; setTimeout(refreshScreen,500); });
+document.getElementById('pEffort').addEventListener('change',async e=>{ if(!e.target.value||!openChat||openChatProvider()!=='claude')return; await fetch(`/api/chats/${openChat}/input`,{method:'POST',headers:H(),body:JSON.stringify({text:'/effort '+e.target.value})}); e.target.value=''; setTimeout(refreshScreen,500); });
 
 /* Stage 1 interactions: persistent terminal zoom and drag-to-resize. */
 let termSize=14;
@@ -784,14 +913,15 @@ function restorePanelWidth(){
   const root=document.documentElement,button=document.getElementById('devToggle'),system=document.getElementById('systemDetails');
   let enabled=false;try{enabled=localStorage.getItem('ck-devview')==='true';}catch(e){}
   root.classList.toggle('dev',enabled);system.open=enabled;button.setAttribute('aria-checked',String(enabled));
-  button.addEventListener('click',()=>{const on=root.classList.toggle('dev');system.open=on;if(!on&&panelMode==='full')toggleView();button.setAttribute('aria-checked',String(on));if(updateState)renderUpdate(updateState);try{localStorage.setItem('ck-devview',String(on));}catch(e){}});
+  button.addEventListener('click',()=>{const on=!root.classList.contains('dev');if(!on){try{localStorage.setItem('ck-devview','false');}catch(e){}location='/chat';return;}root.classList.toggle('dev',on);system.open=on;button.setAttribute('aria-checked',String(on));if(updateState)renderUpdate(updateState);try{localStorage.setItem('ck-devview',String(on));}catch(e){}});
 })();
 
 const ACTIONS={
   'open-modal':()=>openModal(), 'close-modal':()=>closeModal(), 'create-chat':()=>createChat(),
   'toggle-view':()=>toggleView(), 'wrap-save':()=>wrapSave(), 'kill-chat':()=>killChat(),
-  'close-panel':()=>closePanel(), 'copy-attach':()=>copyAttach(),
+  'close-panel':()=>closePanel(), 'copy-attach':()=>copyAttach(), 'refresh-models':el=>refreshModels(el),
   'open-panel':el=>openPanel(el.dataset.chat),
+  'open-chat':el=>location='/chat?name='+encodeURIComponent(el.dataset.chat),
   'answer-card':(el,e)=>{e.stopPropagation();answerCard(el.dataset.chat,el.dataset.key);},
   'task-done':el=>updateTasks([el.dataset.taskKey],'completed'),
   'task-abandon':el=>updateTasks([el.dataset.taskKey],'abandoned'),
@@ -802,7 +932,7 @@ const ACTIONS={
   'toggle-active-filter':()=>{activeOnly=!activeOnly;for(const id of ['grid','needsGrid'])document.getElementById(id).classList.toggle('active-only',activeOnly);const b=document.querySelector('[data-action="toggle-active-filter"]');b?.classList.toggle('active',activeOnly);b?.setAttribute('aria-pressed',String(activeOnly));},
   'term-zoom-out':()=>setTermSize(termSize-1), 'term-zoom-in':()=>setTermSize(termSize+1),
   'dispatch-kill':()=>killDispatch(),
-  'apply-update':()=>applyUpdate(),
+  'apply-update':()=>applyUpdate(), 'check-update':()=>checkUpdate(),
 };
 document.addEventListener('click',e=>{
   const el=e.target.closest('[data-action]');
@@ -816,8 +946,9 @@ document.addEventListener('keydown',e=>{
   ACTIONS[card.dataset.action]?.(card,e);
 });
 document.addEventListener('change',e=>{
-  const el=e.target.closest('[data-action="dispatch-enabled"]');
-  if(el)setDispatchEnabled(el.checked);
+  const dispatch=e.target.closest('[data-action="dispatch-enabled"]'),auto=e.target.closest('[data-action="update-auto"]');
+  if(dispatch)setDispatchEnabled(dispatch.checked);
+  if(auto)updateUpdateConfig({auto:auto.checked});
 });
 
 // --- full keyboard passthrough: keystrokes on the focused screen go straight to tmux ---

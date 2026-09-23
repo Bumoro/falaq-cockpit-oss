@@ -4,6 +4,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const net = require('net');
 const { spawn, spawnSync } = require('child_process');
@@ -35,6 +36,13 @@ function killPidFile(port) {
   } catch (_) {}
 }
 
+function tempMirror(serverSource) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ck-start-'));
+  fs.copyFileSync(START, path.join(dir, 'start.js'));
+  fs.writeFileSync(path.join(dir, 'server.js'), serverSource);
+  return dir;
+}
+
 test('start.js does NOT spawn a duplicate when the port is already served', async () => {
   const PORT = '3961';
   const seed = spawn('node', [SERVER], { env: { ...process.env, AGENT_DASHBOARD_PORT: PORT }, stdio: 'ignore' });
@@ -61,5 +69,42 @@ test('start.js spawns exactly one server when the port is free', async () => {
   } finally {
     killPidFile(3963);
     await wait(200);
+  }
+});
+
+test('start.js verifies a healthy detached server before exiting 0', async () => {
+  const port = 3958;
+  const mirror = tempMirror(`const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const port = parseInt(process.env.AGENT_DASHBOARD_PORT, 10);
+const server = http.createServer((req, res) => { res.writeHead(req.url === '/live' ? 200 : 404); res.end(); });
+server.listen(port, '127.0.0.1', () => fs.writeFileSync(path.join(__dirname, 'server.pid'), String(process.pid)));
+process.on('SIGTERM', () => { server.close(() => process.exit(0)); });
+`);
+  const start = path.join(mirror, 'start.js');
+  const res = spawnSync(process.execPath, [start], { env: { ...process.env, AGENT_DASHBOARD_PORT: String(port) }, timeout: 5000 });
+  try {
+    assert.equal(res.status, 0, 'start.js exits 0 only after /live responds');
+    assert.equal(await listening(port), true, 'detached fixture server should be listening');
+  } finally {
+    try { process.kill(parseInt(fs.readFileSync(path.join(mirror, 'server.pid'), 'utf8')), 'SIGTERM'); } catch (_) {}
+    await wait(200);
+    fs.rmSync(mirror, { recursive: true, force: true });
+  }
+});
+
+test('start.js reports a require-time server crash and exits 1', () => {
+  const port = 3959;
+  const mirror = tempMirror("throw new Error('fixture require-time crash');\n");
+  const res = spawnSync(process.execPath, [path.join(mirror, 'start.js')], {
+    env: { ...process.env, AGENT_DASHBOARD_PORT: String(port) },
+    timeout: 5000,
+  });
+  try {
+    assert.equal(res.status, 1, 'start.js must fail when the child never serves /live');
+    assert.match(fs.readFileSync(path.join(mirror, 'error.log'), 'utf8'), /start server failed to serve \/live/);
+  } finally {
+    fs.rmSync(mirror, { recursive: true, force: true });
   }
 });

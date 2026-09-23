@@ -38,7 +38,9 @@ try {
   const data = JSON.parse(fs.readFileSync(0, 'utf8'));
   const id = data.session_id;
   const evt = data.hook_event_name;
-  if (!id || !evt) process.exit(0);
+  // typeof check first: RegExp.test() stringifies its argument, so test(undefined) matches the
+  // literal "undefined" and a payload with NO session_id would write an `undefined.json` phantom.
+  if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(id) || !evt) process.exit(0);
 
   fs.mkdirSync(SESSIONS_DIR, { recursive: true });
   const file = path.join(SESSIONS_DIR, id + '.json');

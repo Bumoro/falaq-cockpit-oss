@@ -64,3 +64,48 @@ test('messages route enforces token + whitelist and /chat serves the friendly vi
     srv.kill();
   }
 });
+
+test('messages route maps a mediated Ollama history to the bubble-view turn shape', async () => {
+  const port = 3933;
+  const base = `http://localhost:${port}`;
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'ckollamamsg-'));
+  fs.mkdirSync(path.join(state, 'ollama-chats'));
+  fs.writeFileSync(path.join(state, 'chats.json'), JSON.stringify([{
+    name: 'ck-local',
+    title: 'local',
+    cwd: os.homedir(),
+    model: 'qwen2.5-coder:7b',
+    effort: 'medium',
+    provider: 'ollama',
+    profile: 'dev',
+    mediated: true,
+    createdAt: Date.now(),
+  }]));
+  fs.writeFileSync(path.join(state, 'ollama-chats', 'ck-local.jsonl'), [
+    JSON.stringify({ role: 'user', content: 'hello local', ts: '2026-07-23T10:00:00.000Z', tokens: null }),
+    JSON.stringify({ role: 'assistant', content: 'hello back', ts: '2026-07-23T10:00:01.000Z', tokens: { prompt: 12, eval: 4 } }),
+  ].join('\n') + '\n');
+
+  const srv = spawn('node', [path.join(DIR, 'server.js')], {
+    env: { ...process.env, AGENT_DASHBOARD_PORT: String(port), COCKPIT_DIR: state, CK_OLLAMA_URL: 'http://127.0.0.1:9' },
+    stdio: 'ignore',
+  });
+  try {
+    let token = null;
+    for (let i = 0; i < 40 && token === null; i++) {
+      await new Promise(r => setTimeout(r, 250));
+      try { token = await (await fetch(`${base}/api/token`)).text(); } catch (e) {}
+    }
+    assert.ok(token, 'server did not become ready');
+    const H = { 'x-cockpit-token': token };
+    const res = await fetch(`${base}/api/chats/ck-local/messages`, { headers: H });
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(await res.json(), [
+      { role: 'you', ts: '2026-07-23T10:00:00.000Z', blocks: [{ type: 'text', text: 'hello local' }] },
+      { role: 'claude', ts: '2026-07-23T10:00:01.000Z', blocks: [{ type: 'text', text: 'hello back' }] },
+    ]);
+  } finally {
+    srv.kill();
+    fs.rmSync(state, { recursive: true, force: true });
+  }
+});

@@ -8,6 +8,7 @@ codex.js
 agents.js
 context.js
 usage.js
+models.js
 transcript.js
 watchers.js
 notify.js
@@ -21,8 +22,13 @@ purpose.js
 updater.js
 duplicates.js
 chat.html
+md.js
 nondev-profile.json
 watchers/checks.js
+providers/ollama-chat.js
+providers/ollama.js
+providers/antigravity.js
+providers/session.js
 dispatch.js
 dispatch/eligibility.js
 dispatch/completion.js

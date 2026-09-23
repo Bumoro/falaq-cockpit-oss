@@ -6,8 +6,8 @@ const os = require('os');
 const { spawn } = require('child_process');
 
 const BRIDGE_PROMPT = {
-  intake: 'Read Client-OS tasks tagged auto:eligible that are actionable (not done, paused, blocked, or claimed) via the task tracker. For each resolve exactly {id,title,status,tags,blockedBy,owner,repo,cwd,hasPlan}. Read the cockpit token from ~/.claude/agent-dashboard/.token and POST {tasks:[...]} to http://127.0.0.1:3847/api/dispatch/run with header x-cockpit-token. Do nothing else.',
-  report: 'Read ~/.claude/agent-dashboard/dispatch-state.json. For each finished dispatch run, file a Client-OS task titled "🔒 GATE: review dispatched PR — <title>" with the PR link and review-provenance in the body, assigned to the repo owner. Return one summary line per run and do nothing else.',
+  intake: 'Read tasks from your task tracker tagged auto:eligible that are actionable (not done, paused, blocked, or claimed) via the task tracker. For each resolve exactly {id,title,status,tags,blockedBy,owner,repo,cwd,hasPlan}. Read the cockpit token from ~/.claude/agent-dashboard/.token and POST {tasks:[...]} to http://127.0.0.1:3847/api/dispatch/run with header x-cockpit-token. Do nothing else.',
+  report: 'Read ~/.claude/agent-dashboard/dispatch-state.json. For each finished dispatch run, file a task in your task tracker titled "Review dispatched PR — <title>" with the PR link and review-provenance in the body, assigned to the repo owner. Return one summary line per run and do nothing else.',
 };
 
 function stateDir() { return process.env.COCKPIT_DIR || path.join(os.homedir(), '.claude', 'agent-dashboard'); }
@@ -22,7 +22,15 @@ function defaultToken() { try { return fs.readFileSync(path.join(os.homedir(), '
 function defaultSpawnBridge(mode) {
   const prompt = BRIDGE_PROMPT[mode];
   if (!prompt) return;
-  spawn('claude', ['-p', prompt], { detached: true, stdio: 'ignore' }).unref();
+  // Env hygiene: this detached headless claude outlives us, and its SessionStart hook (start.js)
+  // launches a cockpit server on whatever AGENT_DASHBOARD_PORT it inherited. A test/custom-port
+  // server that spawns a bridge would therefore resurrect a REAL server on its test port after it
+  // exits (the recurring 39xx zombie). The bridge always targets the default cockpit, so children
+  // must never inherit instance overrides. CK_CLAUDE_BIN lets tests stub the spawn entirely.
+  const env = { ...process.env };
+  delete env.AGENT_DASHBOARD_PORT;
+  delete env.COCKPIT_DIR;
+  spawn(process.env.CK_CLAUDE_BIN || 'claude', ['-p', prompt], { detached: true, stdio: 'ignore', env }).unref();
 }
 function newer(a, b) { return Number(a) > Number(b); }
 

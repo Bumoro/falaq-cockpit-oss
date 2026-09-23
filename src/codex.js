@@ -76,6 +76,92 @@ function readContext(file) {
   }
   return context ? { ...context, model: null } : null;
 }
+
+// Return the cumulative token total carried by a valid token_count event. Unlike readContext(),
+// this deliberately reads total_token_usage: here it is used as an odometer at two points in time,
+// never as context occupancy.
+function cumulativeTokenEvent(line) {
+  let o;
+  try { o = JSON.parse(line); } catch (e) { return null; }
+  const p = o && o.payload;
+  const total = p && p.type === 'token_count' && p.info &&
+    p.info.total_token_usage && p.info.total_token_usage.total_tokens;
+  const at = Date.parse(o && o.timestamp);
+  if (!Number.isFinite(total) || total < 0 || !Number.isFinite(at)) return null;
+  return { at, total };
+}
+
+function rolloutTokensInWindow(file, startMs, endMs) {
+  let raw;
+  try { raw = fs.readFileSync(file, 'utf8'); } catch (e) { return null; }
+  let before = 0, beforeAt = -Infinity;
+  let throughEnd = null, throughEndAt = -Infinity;
+  let sawInWindow = false;
+  for (const line of raw.split('\n')) {
+    if (!line) continue;
+    const event = cumulativeTokenEvent(line);
+    if (!event || event.at > endMs) continue;
+    // >= makes the later record win if two telemetry events share a timestamp.
+    if (event.at >= throughEndAt) {
+      throughEnd = event.total;
+      throughEndAt = event.at;
+    }
+    if (event.at < startMs && event.at >= beforeAt) {
+      before = event.total;
+      beforeAt = event.at;
+    } else if (event.at >= startMs) {
+      sawInWindow = true;
+    }
+  }
+  // A rollout whose telemetry all predates the window contributed nothing to this block;
+  // returning null keeps a quiet block honest ("no Codex activity") instead of a zero tile.
+  if (throughEnd === null || !sawInWindow) return null;
+  return Math.max(0, throughEnd - before);
+}
+
+function dateDirParts(ms, utc) {
+  const d = new Date(ms);
+  const year = utc ? d.getUTCFullYear() : d.getFullYear();
+  const month = (utc ? d.getUTCMonth() : d.getMonth()) + 1;
+  const day = utc ? d.getUTCDate() : d.getDate();
+  return [String(year), String(month).padStart(2, '0'), String(day).padStart(2, '0')];
+}
+
+// Sum Codex's lifetime rollout odometers over one bounded interval. Session directories are named
+// in local time, but include UTC date candidates too: this keeps fixtures and installations whose
+// directory convention differs around midnight safe without walking the whole sessions tree.
+function blockUsage(startTime, endTime, opts) {
+  const startMs = typeof startTime === 'number' ? startTime : Date.parse(startTime);
+  const endMs = typeof endTime === 'number' ? endTime : Date.parse(endTime);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs < startMs) return null;
+  const root = (opts && opts.root) || sessionsRoot();
+  const dirs = new Set();
+  // Rollout files live in the dir of their SESSION START date, so a still-active session started
+  // a day before the window would be missed by start/end dirs alone — include one extra lookback day.
+  for (const ms of [startMs - 86400000, startMs, endMs]) {
+    for (const utc of [false, true]) dirs.add(path.join(root, ...dateDirParts(ms, utc)));
+  }
+  let totalTokens = 0, telemetryCount = 0;
+  for (const dir of dirs) {
+    let files = [];
+    try { files = fs.readdirSync(dir); } catch (e) { continue; }
+    for (const name of files) {
+      if (!/^rollout-.*\.jsonl$/.test(name)) continue;
+      const tokens = rolloutTokensInWindow(path.join(dir, name), startMs, endMs);
+      if (tokens === null) continue;
+      telemetryCount++;
+      totalTokens += tokens;
+    }
+  }
+  if (!telemetryCount) return null;
+  return {
+    totalTokens,
+    startTime,
+    endTime,
+    source: 'codex-rollouts',
+  };
+}
+
 function readInsights(file, cwd) {
   let raw;
   try {
@@ -147,4 +233,4 @@ function activeTasks(opts) {
   if (!opts) { _cache = out; _cacheAt = Date.now(); }
   return out;
 }
-module.exports = { activeTasks, readInsights };
+module.exports = { activeTasks, readInsights, blockUsage, rolloutTokensInWindow };

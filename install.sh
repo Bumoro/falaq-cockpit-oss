@@ -32,6 +32,7 @@ if ! command -v node >/dev/null 2>&1; then
   echo "ERROR: node is required to install Falaq Cockpit" >&2
   exit 1
 fi
+NODE_BIN="$(node -p process.execPath)"
 if ! command -v tmux >/dev/null 2>&1 || ! command -v claude >/dev/null 2>&1; then
   echo "WARN: controlled New-Chat sessions need tmux + the claude CLI; monitoring works without them" >&2
 fi
@@ -100,10 +101,10 @@ if [ "$DRY_RUN" -eq 1 ]; then
   fi
 else
   if [ "$MERGE_HOOKS" -eq 1 ]; then
-    CK_MIRROR_DIR="$MIRROR" node "$REPO/src/install-hooks.js" --merge --settings "$SETTINGS"
+    CK_MIRROR_DIR="$MIRROR" CK_NODE_PATH="$NODE_BIN" node "$REPO/src/install-hooks.js" --merge --settings "$SETTINGS"
     echo "Merged cockpit hooks into: $SETTINGS"
   else
-    CK_MIRROR_DIR="$MIRROR" node "$REPO/src/install-hooks.js" --print
+    CK_MIRROR_DIR="$MIRROR" CK_NODE_PATH="$NODE_BIN" node "$REPO/src/install-hooks.js" --print
   fi
 fi
 

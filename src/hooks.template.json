@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"__MIRROR__/start.js\""
+            "command": "\"__NODE__\" \"__MIRROR__/start.js\"", "timeout": 10
           }
         ]
       },
@@ -13,7 +13,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"__MIRROR__/session-hook.js\"",
+            "command": "\"__NODE__\" \"__MIRROR__/session-hook.js\"",
             "timeout": 5
           }
         ]
@@ -24,7 +24,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"__MIRROR__/session-hook.js\"",
+            "command": "\"__NODE__\" \"__MIRROR__/session-hook.js\"",
             "timeout": 5
           }
         ]
@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"__MIRROR__/session-hook.js\"",
+            "command": "\"__NODE__\" \"__MIRROR__/session-hook.js\"",
             "timeout": 5
           }
         ]
@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"__MIRROR__/session-hook.js\"",
+            "command": "\"__NODE__\" \"__MIRROR__/session-hook.js\"",
             "timeout": 5
           }
         ]
@@ -58,7 +58,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"__MIRROR__/session-hook.js\"",
+            "command": "\"__NODE__\" \"__MIRROR__/session-hook.js\"",
             "timeout": 5
           }
         ]
@@ -69,7 +69,29 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"__MIRROR__/session-hook.js\"",
+            "command": "\"__NODE__\" \"__MIRROR__/session-hook.js\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"__NODE__\" \"__MIRROR__/session-hook.js\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"__NODE__\" \"__MIRROR__/session-hook.js\"",
             "timeout": 5
           }
         ]

@@ -20,7 +20,10 @@ test('/api/dispatch merges config, writes run queue, and kills active fleet', as
   fs.writeFileSync(path.join(state, 'dispatch-state.json'), JSON.stringify({ runs: {
     a: { phase: 'running', chatName: 'ck-running' }, b: { phase: 'spawning', chatName: 'ck-spawning' }, c: { phase: 'done', chatName: 'ck-done' },
   } }));
-  const srv = spawn('node', [path.join(DIR, 'server.js')], { env: { ...process.env, AGENT_DASHBOARD_PORT: String(PORT), COCKPIT_DIR: state, CK_CCUSAGE_CMD: '/usr/bin/false', CK_TMUX_BIN: tmux, CK_TMUX_LOG: tmuxLog }, stdio: 'ignore' });
+  // CK_CLAUDE_BIN stub: the seeded 'done' run makes maybeBrief() fire spawnBridge('report') at
+  // startup — without the stub that's a REAL detached `claude -p` whose SessionStart hook then
+  // resurrects a real cockpit server on this test port (the 39xx zombie).
+  const srv = spawn('node', [path.join(DIR, 'server.js')], { env: { ...process.env, AGENT_DASHBOARD_PORT: String(PORT), COCKPIT_DIR: state, CK_CCUSAGE_CMD: '/usr/bin/false', CK_TMUX_BIN: tmux, CK_TMUX_LOG: tmuxLog, CK_CLAUDE_BIN: '/usr/bin/true' }, stdio: 'ignore' });
   try {
     await new Promise(resolve => setTimeout(resolve, 700));
     assert.equal((await fetch(`${BASE}/api/dispatch`)).status, 403);

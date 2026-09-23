@@ -87,3 +87,47 @@ test('caps very large transcripts and keeps the tail', () => {
   assert.match(out, /line 4999/);                        // the tail is kept
   assert.ok(out.split('\n').length < 500);
 });
+
+test('filesTouched includes only successful paired mutating tools and normalizes relative paths', () => {
+  const { t, dir } = fresh();
+  const cwd = path.join(dir, 'work');
+  fs.mkdirSync(cwd);
+  const f = writeJsonl(dir, 'files.jsonl', [
+    { type: 'assistant', timestamp: '2024-01-01T10:00:00Z', message: { content: [
+      { type: 'tool_use', id: 'ok-write', name: 'Write', input: { file_path: 'src/a.js' } },
+      { type: 'tool_use', id: 'failed-edit', name: 'Edit', input: { file_path: '/tmp/no.js' } },
+      { type: 'tool_use', id: 'read', name: 'Read', input: { file_path: '/tmp/read.js' } },
+      { type: 'tool_use', id: 'unpaired', name: 'NotebookEdit', input: { path: '/tmp/unpaired.ipynb' } },
+    ] } },
+    { type: 'user', message: { content: [
+      { type: 'tool_result', tool_use_id: 'ok-write', is_error: false },
+      { type: 'tool_result', tool_use_id: 'failed-edit', is_error: true },
+      { type: 'tool_result', tool_use_id: 'read', is_error: false },
+    ] } },
+  ]);
+  assert.deepStrictEqual(t.filesTouched(f, { cwd }), [
+    { path: path.join(cwd, 'src/a.js'), lastTs: '2024-01-01T10:00:00Z' },
+  ]);
+});
+
+test('filesTouched has no freshness window, dedupes newest-first, and caps at 100', () => {
+  const { t, dir } = fresh();
+  const rows = [];
+  for (let i = 0; i < 105; i++) {
+    rows.push({ type: 'assistant', timestamp: `2001-01-01T00:${String(i % 60).padStart(2, '0')}:00Z`, message: { content: [
+      { type: 'tool_use', id: 'w' + i, name: i % 2 ? 'Edit' : 'NotebookEdit', input: { file_path: path.join(dir, 'file-' + i) } },
+    ] } });
+    rows.push({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'w' + i, is_error: false }] } });
+  }
+  rows.push({ type: 'assistant', timestamp: '2001-01-02T00:00:00Z', message: { content: [
+    { type: 'tool_use', id: 'again', name: 'MultiEdit', input: { path: path.join(dir, 'file-104') } },
+  ] } });
+  rows.push({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'again' }] } });
+  const f = writeJsonl(dir, 'many-files.jsonl', rows);
+  const got = t.filesTouched(f);
+  assert.equal(got.length, 100);
+  assert.deepStrictEqual(got[0], { path: path.join(dir, 'file-104'), lastTs: '2001-01-02T00:00:00Z' });
+  assert.equal(new Set(got.map(x => x.path)).size, 100);
+  assert.ok(got.some(x => x.path.endsWith('file-5')), 'keeps the newest 100 unique files');
+  assert.ok(!got.some(x => x.path.endsWith('file-0')), 'drops oldest files over the cap');
+});

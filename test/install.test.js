@@ -56,7 +56,11 @@ test('fresh --no-start install syncs whitelist, seeds config, and generates port
   assert.ok(fs.existsSync(path.join(f.mirror, 'watchers', 'watcher-config.json')));
   const hooks = fs.readFileSync(path.join(f.mirror, 'generated-hooks.json'), 'utf8');
   assert.doesNotThrow(() => JSON.parse(hooks));
-  assert.ok(!hooks.includes('omaralsumait'));
+  assert.ok(!hooks.includes('/Users/'));
+  const template = fs.readFileSync(path.join(REPO, 'src', 'hooks.template.json'), 'utf8');
+  assert.doesNotMatch(template, /"command"\s*:\s*"node /, 'cockpit hook commands must not use bare node');
+  const commands = Object.values(JSON.parse(hooks).hooks).flat().flatMap(entry => entry.hooks).map(hook => hook.command);
+  assert.ok(commands.every(command => command.startsWith(`"${process.execPath}" `)), 'install resolves every hook to the current Node interpreter');
 });
 
 test('reinstall never overwrites personalized config', () => {

@@ -281,6 +281,47 @@ function recentTouchedFiles(file, cwd, opts) {
   return touched.slice(-20);
 }
 
+// Full-session file list for the non-dev chat. This deliberately mirrors recentTouchedFiles'
+// successful-tool pairing, path normalization, transcript jail and bounded read, but has no age
+// cutoff and keeps metadata for the newest occurrence of each file.
+function filesTouched(file, opts) {
+  opts = opts || {};
+  const real = resolveInJail(file);
+  if (!real) return [];
+  const readCap = Number(opts.readCap || 4 * 1024 * 1024);
+  const cwd = opts.cwd || '.';
+  return memoized('filesTouched\0' + path.resolve(cwd), real, readCap, [], () => {
+    let raw;
+    try { raw = readBounded(real, readCap).raw; } catch (e) { return []; }
+    const lines = raw.split('\n'), success = new Set();
+    for (const line of lines) {
+      let event; try { event = JSON.parse(line); } catch (e) { continue; }
+      const content = event && event.message && event.message.content;
+      if (!Array.isArray(content)) continue;
+      for (const block of content) {
+        if (block && block.type === 'tool_result' && block.tool_use_id && !block.is_error) success.add(block.tool_use_id);
+      }
+    }
+    const mutating = new Set(['edit', 'write', 'multiedit', 'notebookedit']);
+    const newest = new Map();
+    for (const line of lines) {
+      let event; try { event = JSON.parse(line); } catch (e) { continue; }
+      if (event && (event.isSidechain === true || event.isMeta === true)) continue;
+      const content = event && event.message && event.message.content;
+      if (!Array.isArray(content)) continue;
+      for (const block of content) {
+        if (!block || block.type !== 'tool_use' || !success.has(block.id) || !mutating.has(String(block.name || '').toLowerCase())) continue;
+        const input = block.input || {}, value = input.file_path || input.path;
+        if (typeof value !== 'string' || !value.trim()) continue;
+        const normalized = path.normalize(path.isAbsolute(value) ? value : path.resolve(cwd, value));
+        newest.delete(normalized);
+        newest.set(normalized, { path: normalized, lastTs: event.timestamp || '' });
+      }
+    }
+    return [...newest.values()].slice(-100).reverse();
+  });
+}
+
 function completedActions(file, opts) {
   opts = opts || {};
   const real = resolveInJail(file);
@@ -310,4 +351,9 @@ function completedActions(file, opts) {
   });
 }
 
-module.exports = { readTranscript, parseTranscript, recentTouchedFiles, completedActions, isAllowed };
+module.exports = {
+  readTranscript, parseTranscript, recentTouchedFiles, filesTouched, completedActions, isAllowed,
+  // Shared low-level primitives for other transcript-derived summaries. Additive exports keep the
+  // existing public API intact; callers supply distinct memo kinds so their cached values cannot mix.
+  readBounded, memoized,
+};

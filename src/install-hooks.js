@@ -49,7 +49,9 @@ const mirror = path.resolve(process.env.CK_MIRROR_DIR || path.join(os.homedir(),
 const templateFile = path.join(__dirname, 'hooks.template.json');
 let resolved;
 try {
-  resolved = JSON.parse(fs.readFileSync(templateFile, 'utf8').replaceAll('__MIRROR__', mirror));
+  resolved = JSON.parse(fs.readFileSync(templateFile, 'utf8')
+    .replaceAll('__MIRROR__', mirror)
+    .replaceAll('__NODE__', process.env.CK_NODE_PATH || process.execPath));
 } catch (err) {
   fail(`could not read hook template: ${err.message}`);
 }

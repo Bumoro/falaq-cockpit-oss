@@ -7,7 +7,7 @@ const os = require('os');
 function setup() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ckcodex-'));
   const state = fs.mkdtempSync(path.join(os.tmpdir(), 'ckstate-'));
-  fs.writeFileSync(path.join(state, 'config.json'), JSON.stringify({ clientMap: { 'wave4a': 'Client-OS' } }));
+  fs.writeFileSync(path.join(state, 'config.json'), JSON.stringify({ clientMap: { 'wave4a': 'Acme' } }));
   process.env.CK_CODEX_DIR = root;
   process.env.COCKPIT_DIR = state;
   delete require.cache[require.resolve('../codex.js')];
@@ -27,13 +27,13 @@ test('activeTasks lists a fresh rollout with meta + resolved client, sorted newe
   const { codex, root } = setup();
   const now = 1783520000000;
   writeRollout(root, '2026', '07', '08', 'rollout-fresh-1.jsonl',
-    { id: 'cx-1', cwd: '/Users/o/client-os-wt/wave4a', originator: 'Claude Code' }, now - 30 * 1000);
+    { id: 'cx-1', cwd: '/Users/o/acme-wt/wave4a', originator: 'Claude Code' }, now - 30 * 1000);
   writeRollout(root, '2026', '07', '08', 'rollout-fresh-2.jsonl',
     { id: 'cx-2', cwd: '/Users/o/other', originator: 'Claude Code' }, now - 90 * 1000);
   const tasks = codex.activeTasks({ now, freshMs: 3 * 60 * 1000 });
   assert.equal(tasks.length, 2);
   assert.equal(tasks[0].id, 'cx-1', 'newest (most recently written) first');
-  assert.equal(tasks[0].client, 'Client-OS', 'cwd mapped to client via config.json');
+  assert.equal(tasks[0].client, 'Acme', 'cwd mapped to client via config.json');
   assert.equal(tasks[1].id, 'cx-2');
 });
 
@@ -92,7 +92,7 @@ test('activeTasks parses a real-shaped meta line whose base_instructions overflo
   const tasks = codex.activeTasks({ now, freshMs: 3 * 60 * 1000 });
   assert.equal(tasks.length, 1, 'the oversized meta line is still parsed, not dropped');
   assert.equal(tasks[0].id, 'cx-big');
-  assert.equal(tasks[0].client, 'Client-OS', 'cwd still resolves despite the overflow');
+  assert.equal(tasks[0].client, 'Acme', 'cwd still resolves despite the overflow');
   assert.equal(tasks[0].originator, 'Codex Desktop');
 });
 

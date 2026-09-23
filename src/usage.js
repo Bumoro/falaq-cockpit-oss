@@ -5,9 +5,83 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const codex = require('./codex.js');
 
 function stateDir() { return process.env.COCKPIT_DIR || __dirname; }
 function cacheFile() { return path.join(stateDir(), 'usage-cache.json'); }
+function ollamaLedgerFile() { return path.join(stateDir(), 'ollama-usage.jsonl'); }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const OLLAMA_LEDGER_RETENTION_MS = 8 * DAY_MS;
+
+function localPeriodStart(label) {
+  if (!label) return null;
+  const ms = /^\d{4}-\d{2}-\d{2}$/.test(label)
+    ? new Date(label + 'T00:00:00').getTime()
+    : Date.parse(label);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function readOllamaLedger(now, prune) {
+  const file = ollamaLedgerFile();
+  let raw;
+  try { raw = fs.readFileSync(file, 'utf8'); } catch (e) { return []; }
+  const entries = [];
+  const retained = [];
+  const cutoff = now - OLLAMA_LEDGER_RETENTION_MS;
+  for (const line of raw.split('\n')) {
+    if (!line.trim()) continue;
+    try {
+      const entry = JSON.parse(line);
+      const ts = Date.parse(entry && entry.ts);
+      if (!Number.isFinite(ts) ||
+          !Number.isFinite(entry.prompt) || entry.prompt < 0 ||
+          !Number.isFinite(entry.eval) || entry.eval < 0) continue;
+      if (ts >= cutoff) retained.push(entry);
+      entries.push({ ...entry, _ts: ts });
+    } catch (e) {}
+  }
+  if (prune && retained.length !== entries.length) {
+    // Rewrite only when something actually aged out: this shrinks the window in which a
+    // concurrent generation's append (to the old inode) could be lost to ~once per 8 days.
+    try {
+      const body = retained.length ? retained.map(entry => JSON.stringify(entry)).join('\n') + '\n' : '';
+      fs.writeFileSync(file + '.tmp', body);
+      fs.renameSync(file + '.tmp', file);
+    } catch (e) {}
+  }
+  return entries;
+}
+
+function ollamaWindowUsage(entries, start, end, includeTimes) {
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+  let totalTokens = 0;
+  let matched = false;
+  for (const entry of entries) {
+    if (entry._ts < start || entry._ts > end) continue;
+    totalTokens += entry.prompt + entry.eval;
+    matched = true;
+  }
+  if (!matched) return null;
+  const usage = { totalTokens };
+  if (includeTimes) {
+    usage.startTime = new Date(start).toISOString();
+    usage.endTime = new Date(end).toISOString();
+  }
+  return usage;
+}
+
+function addOllamaUsage(res) {
+  const now = res.generatedAt;
+  const entries = readOllamaLedger(now, true);
+  const blockStart = res.block && Date.parse(res.block.startTime);
+  const blockEnd = res.block && Date.parse(res.block.endTime);
+  res.ollamaBlock = ollamaWindowUsage(entries, blockStart, blockEnd, true);
+
+  const weekLabel = res.week && (res.week.week || res.week.period);
+  const weekStart = localPeriodStart(weekLabel);
+  res.ollamaWeek = ollamaWindowUsage(entries, weekStart, now, false);
+}
 
 function runJson(subArgs, cb) {
   const stub = process.env.CK_CCUSAGE_CMD;
@@ -69,14 +143,24 @@ function modelUsage(row, matches) {
   return { totalTokens, totalCost, costUSD: totalCost, modelBreakdowns: selected };
 }
 
-// ccusage may report Claude and Codex in the same row. Keep the exact, verified Codex model
-// isolated so its tokens and online-provider cost can never be blended into Claude's figures.
+// ccusage may report Claude and Codex in the same row. Keep every Codex model isolated so its tokens
+// and online-provider cost can never be blended into Claude's figures. A model is Codex when it is in
+// the discovered codex catalog OR looks like an OpenAI/Codex family id (gpt-*, codex-*, o<digit>*).
+const CODEX_MODEL_RE = /^(gpt-|codex-|o\d)/i;
+function isCodexModel(model) {
+  if (CODEX_MODEL_RE.test(model)) return true;
+  try {
+    const entry = require('./models.js').getCatalog().codex;
+    return !!(entry && entry.models.some(m => m.id === model));
+  } catch (e) { return false; }
+}
+
 function codexUsage(row) {
-  return modelUsage(row, model => model === 'gpt-5.6-sol');
+  return modelUsage(row, model => isCodexModel(model));
 }
 
 function claudeUsage(row) {
-  return modelUsage(row, model => model !== 'gpt-5.6-sol');
+  return modelUsage(row, model => !isCodexModel(model));
 }
 
 function withBlockTimes(usage, block) {
@@ -93,10 +177,13 @@ function refresh(cb) {
     codexBlock: null,
     codexWeek: null,
     claudeBlock: null,
+    ollamaBlock: null,
+    ollamaWeek: null,
   };
   let pending = 3;
   const done = () => {
     if (--pending) return;
+    addOllamaUsage(res);
     try {
       fs.writeFileSync(cacheFile() + '.tmp', JSON.stringify(res));
       fs.renameSync(cacheFile() + '.tmp', cacheFile());
@@ -106,14 +193,14 @@ function refresh(cb) {
   runJson(['blocks', '--active'], (o) => {
     res.block = o ? ((o.blocks || []).find(b => b.isActive) || (o.blocks || [])[0] || null) : null;
     if (res.block) {
-      // Older/current ccusage builds may omit per-model block breakdowns. In that case retain the
-      // exact pre-feature Claude tile and leave Codex unknown instead of hiding or guessing usage.
+      // Claude retains ccusage's exact active-block result. Codex's active block comes from rollout
+      // lifetime-odometer deltas because ccusage blocks currently omit a per-model split.
       if (Array.isArray(res.block.modelBreakdowns)) {
-        res.codexBlock = withBlockTimes(codexUsage(res.block), res.block);
         res.claudeBlock = withBlockTimes(claudeUsage(res.block), res.block);
       } else {
         res.claudeBlock = res.block;
       }
+      res.codexBlock = codex.blockUsage(res.block.startTime, res.block.endTime);
     }
     done();
   });
@@ -145,11 +232,13 @@ function refreshPreserving(cb) {
         const oldClaude = prev.claudeBlock != null ? prev.claudeBlock : (canDerive ? withBlockTimes(claudeUsage(prev.block), prev.block) : prev.block);
         if (oldCodex != null) { res.codexBlock = oldCodex; changed = true; }
         if (oldClaude != null) { res.claudeBlock = oldClaude; changed = true; }
+        if (prev.ollamaBlock != null) { res.ollamaBlock = prev.ollamaBlock; changed = true; }
       }
       if (res.week === null) {
         if (prev.week != null) { res.week = prev.week; changed = true; }
         const oldCodexWeek = prev.codexWeek != null ? prev.codexWeek : codexUsage(prev.week);
         if (oldCodexWeek != null) { res.codexWeek = oldCodexWeek; changed = true; }
+        if (prev.ollamaWeek != null) { res.ollamaWeek = prev.ollamaWeek; changed = true; }
       }
       if (res.planUsage === null && prev.planUsage != null) { res.planUsage = prev.planUsage; changed = true; }
       if (changed) {
@@ -269,4 +358,4 @@ function weeklyProjection(usage, now) {
   };
 }
 
-module.exports = { refresh, readCache, refreshPreserving, readPlanUsage, readWeeklyCap, weekTileMode, weeklyFraming, weeklyProjection, codexUsage };
+module.exports = { refresh, readCache, refreshPreserving, readPlanUsage, readWeeklyCap, weekTileMode, weeklyFraming, weeklyProjection, codexUsage, claudeUsage, isCodexModel };

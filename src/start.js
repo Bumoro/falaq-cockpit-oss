@@ -8,6 +8,7 @@
 // exits on EADDRINUSE, so even a rare probe->spawn race self-heals to exactly one listener.
 
 const { spawn } = require('child_process');
+const http = require('http');
 const net = require('net');
 const fs = require('fs');
 const path = require('path');
@@ -15,11 +16,45 @@ const path = require('path');
 const DIR = __dirname;
 const PORT = parseInt(process.env.AGENT_DASHBOARD_PORT || '3847');
 const SERVER_FILE = path.join(DIR, 'server.js');
+const ERROR_LOG = path.join(DIR, 'error.log');
+
+function fail(message) {
+  try { fs.appendFileSync(ERROR_LOG, `${new Date().toISOString()} start ${message}\n`); } catch (_) {}
+  process.exit(1);
+}
+
+function verify(attempt = 1) {
+  let finished = false;
+  const retry = () => {
+    if (finished) return;
+    finished = true;
+    if (attempt >= 12) fail(`server failed to serve /live on port ${PORT}`);
+    else setTimeout(() => verify(attempt + 1), 250);
+  };
+  const req = http.get({ host: '127.0.0.1', port: PORT, path: '/live' }, res => {
+    res.resume();
+    if (res.statusCode === 200) {
+      finished = true;
+      process.exit(0);
+    } else {
+      retry();
+    }
+  });
+  req.on('error', retry);
+  req.setTimeout(200, () => { req.destroy(); retry(); });
+}
 
 function launch() {
   if (!fs.existsSync(SERVER_FILE)) process.exit(0); // not installed yet
-  spawn('node', [SERVER_FILE], { detached: true, stdio: 'ignore', cwd: DIR }).unref();
-  process.exit(0);
+  let child;
+  try {
+    child = spawn(process.execPath, [SERVER_FILE], { detached: true, stdio: 'ignore', cwd: DIR });
+  } catch (e) {
+    fail(`spawn failed: ${e.message || e}`);
+  }
+  child.on('error', e => fail(`spawn failed: ${e.message || e}`));
+  child.on('spawn', () => verify());
+  child.unref();
 }
 
 const sock = net.createConnection({ port: PORT, host: '127.0.0.1' });

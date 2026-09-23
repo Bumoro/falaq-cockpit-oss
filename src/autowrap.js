@@ -26,6 +26,25 @@ function readConfig() {
   };
 }
 
+// The registry's model list can change between launch and restart (a model retired upstream). A
+// continuation must not fail on a stale saved model: fall back to the provider's current default
+// (and a matching effort) instead. Registry errors keep the saved values (createChat still validates).
+function continuationModel(chat) {
+  const provider = chat.provider || 'claude';
+  let model = chat.model;
+  let effort = chat.effort;
+  try {
+    const models = require('./models');
+    if (!model || !models.isAllowedModel(provider, model)) {
+      model = models.defaultModel(provider);
+      effort = undefined;
+    }
+    const efforts = models.effortsFor(provider, model) || [];
+    if (efforts.length && !efforts.includes(effort)) effort = models.defaultEffort(provider, model) || efforts[0];
+  } catch (e) {}
+  return { model, effort };
+}
+
 function loadState() {
   try {
     const value = JSON.parse(fs.readFileSync(_stateFile(), 'utf8'));
@@ -97,14 +116,15 @@ function tick(sessions, deps, now) {
       if (!resume) continue;
       const chat = (io.listChats() || []).find(c => c.name === s.chatName);
       if (!chat) continue;
-      io.createChat({
+      const opts = {
         title: '(cont) ' + chat.title,
         prompt: resume,
-        model: chat.model,
-        effort: chat.effort,
+        ...continuationModel(chat),
         cwd: chat.cwd,
         profile: chat.profile,
-      }, () => {});
+      };
+      if (chat.provider) opts.provider = chat.provider;
+      io.createChat(opts, () => {});
       existing.phase = 'restarted';
       changed = true;
     } catch (e) {}
@@ -113,4 +133,16 @@ function tick(sessions, deps, now) {
   return state;
 }
 
-module.exports = { tick, readConfig, WRAP_MSG, _stateFile };
+// Manual wraps (POST /wrap) go through here so they share the same per-session state machine as
+// auto-injection: tick() sees phase 'wrapped' and (a) never injects WRAP_MSG a second time, and
+// (b) lets autoRestart continue the session from its <RESUME> block. Re-marking an already
+// wrapped/restarted session is intentional — the operator asked for a fresh wrap, and extraction
+// always takes the LAST resume block in the transcript.
+function markWrapped(sessionId, now) {
+  if (!sessionId) return;
+  const state = loadState();
+  state[sessionId] = { phase: 'wrapped', wrappedAt: typeof now === 'number' ? now : Date.now() };
+  saveState(state);
+}
+
+module.exports = { tick, readConfig, markWrapped, WRAP_MSG, _stateFile, _continuationModel: continuationModel };

@@ -36,8 +36,13 @@ const whitelist = [
   'duplicates.js',
   'updater.js',
   'chat.html',
+  'md.js',
   'nondev-profile.json',
   'watchers/checks.js',
+  'providers/ollama-chat.js',
+  'providers/ollama.js',
+  'providers/antigravity.js',
+  'providers/session.js',
   'dispatch.js',
   'dispatch/eligibility.js',
   'dispatch/completion.js',
@@ -47,7 +52,7 @@ const whitelist = [
 ];
 
 test('deploy fixture whitelist covers every runtime file and config template', () => {
-  for (const file of ['notify.js', 'dispatch.js', 'dispatch/eligibility.js', 'dispatch/completion.js', 'dispatch/trigger.js', 'dispatch-profile.json.template', 'live.html', 'mobile.html', 'home.html', 'help.html', 'index.html', 'dashboard-state.js', 'purpose.js', 'duplicates.js', 'updater.js', 'config.json.template']) {
+  for (const file of ['notify.js', 'providers/ollama-chat.js', 'providers/ollama.js', 'providers/antigravity.js', 'providers/session.js', 'dispatch.js', 'dispatch/eligibility.js', 'dispatch/completion.js', 'dispatch/trigger.js', 'dispatch-profile.json.template', 'live.html', 'mobile.html', 'home.html', 'help.html', 'index.html', 'dashboard-state.js', 'purpose.js', 'duplicates.js', 'updater.js', 'md.js', 'config.json.template']) {
     assert.ok(whitelist.includes(file), `${file} missing from deploy fixture whitelist`);
     assert.match(fs.readFileSync(path.join(REAL_REPO, 'files.whitelist'), 'utf8'), new RegExp(`^${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'));
   }
@@ -189,7 +194,7 @@ function makeFixture() {
   }
   writeFile(path.join(mirror, 'config.json'), '{"CUSTOM_MARKER":true}\n');
   writeFile(path.join(mirror, 'sessions/x.json'), 'STATE session\n');
-  writeFile(path.join(mirror, 'watchers/salla.json'), 'STATE watcher\n');
+  writeFile(path.join(mirror, 'watchers/vendor.json'), 'STATE watcher\n');
   writeFile(path.join(mirror, '.token'), 'STATE token\n');
 
   return { root, repo, mirror };
@@ -224,7 +229,7 @@ test('deploy.sh performs a full whitelist sync, preserves state, restarts, and v
   }
   assert.match(fs.readFileSync(path.join(fixture.mirror, 'config.json'), 'utf8'), /CUSTOM_MARKER/);
   assert.equal(fs.readFileSync(path.join(fixture.mirror, 'sessions/x.json'), 'utf8'), 'STATE session\n');
-  assert.equal(fs.readFileSync(path.join(fixture.mirror, 'watchers/salla.json'), 'utf8'), 'STATE watcher\n');
+  assert.equal(fs.readFileSync(path.join(fixture.mirror, 'watchers/vendor.json'), 'utf8'), 'STATE watcher\n');
   assert.equal(fs.readFileSync(path.join(fixture.mirror, '.token'), 'utf8'), 'STATE token\n');
   assert.ok(fs.readdirSync(fixture.mirror).some(name => name.startsWith('.deploy-backup-')));
 

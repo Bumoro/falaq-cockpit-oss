@@ -138,7 +138,7 @@ test('Notifier records idle reasons and consumes a failed natural trigger', asyn
 test('/live contains a developer-only notifier status line', () => {
   const html = fs.readFileSync(path.join(process.env.CK_REPO_ROOT, 'src', 'live.html'), 'utf8');
   assert.match(html, /class="sub dev-only" id="notifyStatus"/);
-  assert.match(html, /fetch\('\/api\/notify'\)/);
+  assert.match(html, /fetch\('\/api\/notify',\{signal\}\)/);
   assert.match(html, /Notifier: \$\{mode\}.*last sent \$\{sent\}.*last error \$\{error\}/);
 });
 

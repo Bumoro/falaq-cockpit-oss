@@ -5,7 +5,7 @@ const { isEligible } = require('../dispatch/eligibility.js');
 const base = () => ({
   id: 't1', title: 'Fix checkout bug', status: 'active',
   tags: ['auto:eligible'], blockedBy: [], owner: null,
-  repo: 'Bumoro/client-os', cwd: '/Users/o/client-os', hasPlan: true,
+  repo: 'example/acme-app', cwd: '/Users/o/acme-app', hasPlan: true,
 });
 const ctx = (over = {}) => ({ runningCwds: new Set(), runningCount: 0, config: { concurrency: 1 }, ...over });
 

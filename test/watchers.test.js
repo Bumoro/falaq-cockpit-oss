@@ -132,7 +132,7 @@ test('sticky watcher: a transient none never downgrades a known hash (no flap, n
 test('sticky watcher: a genuinely new hash still notifies (status update)', async () => {
   const { w, sink } = fresh();
   let phase = { state: 'under_rev', summary: 'under review' };
-  const checks = [{ name: 'salla', sticky: true, check: (cb) => cb(null, phase) }];
+  const checks = [{ name: 'vendor', sticky: true, check: (cb) => cb(null, phase) }];
   await runP(w, checks);
   phase = { state: 'approved1', summary: 'approved' };
   const r2 = await runP(w, checks);

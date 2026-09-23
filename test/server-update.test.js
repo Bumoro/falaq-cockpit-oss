@@ -19,7 +19,7 @@ async function waitForServer(proc) {
   throw new Error('server did not start');
 }
 
-test('update routes are token-gated, expose cached state, and reject a blocked apply', async () => {
+test('update routes are token-gated, expose cached state, preserve config, and reject disabled checks', async (t) => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'server-update-'));
   const cached = {
     checkedAt: 1721600000000,
@@ -31,7 +31,12 @@ test('update routes are token-gated, expose cached state, and reject a blocked a
     blocked: 'dirty-tree',
   };
   fs.writeFileSync(path.join(stateDir, 'update-state.json'), JSON.stringify(cached));
-  fs.writeFileSync(path.join(stateDir, 'config.json'), JSON.stringify({ update: { check: true, auto: false } }));
+  const configFile = path.join(stateDir, 'config.json');
+  fs.writeFileSync(configFile, JSON.stringify({
+    clientMap: { project: 'Project' },
+    unrelated: { keep: true },
+    update: { check: true, auto: true },
+  }));
   const repo = path.join(stateDir, 'repo');
   fs.mkdirSync(path.join(repo, '.git'), { recursive: true });
   fs.writeFileSync(path.join(stateDir, '.repo-root'), repo);
@@ -67,12 +72,70 @@ esac
     await waitForServer(srv);
     assert.equal((await fetch(`${BASE}/api/update`)).status, 403);
     assert.equal((await fetch(`${BASE}/api/update/apply`, { method: 'POST' })).status, 403);
+    assert.equal((await fetch(`${BASE}/api/update/check`, { method: 'POST' })).status, 403);
+    assert.equal((await fetch(`${BASE}/api/update/config`, { method: 'POST' })).status, 403);
 
     const token = await (await fetch(`${BASE}/api/token`)).text();
-    const headers = { 'x-cockpit-token': token };
+    const headers = { 'x-cockpit-token': token, 'Content-Type': 'application/json' };
     const response = await fetch(`${BASE}/api/update`, { headers });
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ...cached, autoEnabled: false, checkEnabled: true });
+    assert.deepEqual(await response.json(), { ...cached, autoEnabled: true, checkEnabled: true });
+
+    const configured = await fetch(`${BASE}/api/update/config`, {
+      method: 'POST', headers, body: JSON.stringify({ auto: false }),
+    });
+    assert.equal(configured.status, 200);
+    assert.deepEqual(await configured.json(), { ...cached, autoEnabled: false, checkEnabled: true });
+    assert.deepEqual(JSON.parse(fs.readFileSync(configFile, 'utf8')), {
+      clientMap: { project: 'Project' },
+      unrelated: { keep: true },
+      update: { check: true, auto: false },
+    });
+
+    const malformed = '{"clientMap":';
+    fs.writeFileSync(configFile, malformed);
+    const refused = await fetch(`${BASE}/api/update/config`, {
+      method: 'POST', headers, body: JSON.stringify({ auto: true, check: false }),
+    });
+    assert.equal(refused.status, 200);
+    assert.deepEqual(await refused.json(), { ...cached, autoEnabled: true, checkEnabled: true });
+    assert.equal(fs.readFileSync(configFile, 'utf8'), malformed);
+
+    const unreadable = JSON.stringify({
+      clientMap: { project: 'Project' },
+      unrelated: { keep: true },
+      update: { check: true, auto: false },
+    });
+    fs.writeFileSync(configFile, unreadable);
+    await t.test('an unreadable existing config is not overwritten', async (t) => {
+      fs.chmodSync(configFile, 0o000);
+      try {
+        try {
+          fs.readFileSync(configFile, 'utf8');
+          t.skip('chmod 000 remains readable in this environment');
+          return;
+        } catch (e) {
+          assert.equal(e.code, 'EACCES');
+        }
+        const refusedUnreadable = await fetch(`${BASE}/api/update/config`, {
+          method: 'POST', headers, body: JSON.stringify({ auto: true, check: false }),
+        });
+        assert.equal(refusedUnreadable.status, 200);
+        assert.deepEqual(await refusedUnreadable.json(), { ...cached, autoEnabled: true, checkEnabled: true });
+      } finally {
+        fs.chmodSync(configFile, 0o600);
+      }
+      assert.equal(fs.readFileSync(configFile, 'utf8'), unreadable);
+    });
+
+    fs.unlinkSync(path.join(stateDir, '.repo-root'));
+    const noRepoCheck = await fetch(`${BASE}/api/update/check`, { method: 'POST', headers });
+    assert.equal(noRepoCheck.status, 200);
+    assert.equal((await noRepoCheck.json()).status, 'no-repo');
+    const noRepoState = await fetch(`${BASE}/api/update`, { headers });
+    assert.equal(noRepoState.status, 200);
+    assert.equal((await noRepoState.json()).status, 'no-repo');
+    fs.writeFileSync(path.join(stateDir, '.repo-root'), repo);
 
     const apply = await fetch(`${BASE}/api/update/apply`, { method: 'POST', headers });
     assert.equal(apply.status, 409);
@@ -81,13 +144,18 @@ esac
     assert.equal(result.dirty, true);
 
     // the kill switch (update.check=false) gates manual apply too — config is re-read per request
-    fs.writeFileSync(path.join(stateDir, 'config.json'), JSON.stringify({ update: { check: false, auto: false } }));
+    fs.writeFileSync(configFile, JSON.stringify({ update: { check: false, auto: false } }));
     const disabled = await fetch(`${BASE}/api/update/apply`, { method: 'POST', headers });
     assert.equal(disabled.status, 409);
     assert.equal((await disabled.json()).reason, 'updates-disabled');
+    const disabledCheck = await fetch(`${BASE}/api/update/check`, { method: 'POST', headers });
+    assert.equal(disabledCheck.status, 409);
+    assert.deepEqual(await disabledCheck.json(), { reason: 'updates-disabled' });
 
     assert.equal((await fetch(`${BASE}/api/update`, { method: 'POST', headers })).status, 405);
     assert.equal((await fetch(`${BASE}/api/update/apply`, { headers })).status, 405);
+    assert.equal((await fetch(`${BASE}/api/update/check`, { headers })).status, 405);
+    assert.equal((await fetch(`${BASE}/api/update/config`, { headers })).status, 405);
     assert.equal((await fetch(`${BASE}/api/sessions`)).status, 200, 'blocked update must not kill the server');
   } finally {
     srv.kill();
